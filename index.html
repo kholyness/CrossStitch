@@ -745,9 +745,13 @@
       <input class="form-input" type="text" id="formName" placeholder="Моя вышивка" maxlength="80" autocomplete="off" />
     </div>
     <div class="form-field">
-      <label class="form-label" for="formNorm">Норма на неделю (крестики)</label>
-      <input class="form-input" type="number" id="formNorm" placeholder="0" min="0" inputmode="numeric" />
-      <div class="form-hint">0 — без нормы</div>
+      <label class="form-label" for="formFinishDate">Желаемая дата завершения</label>
+      <input class="form-input" type="date" id="formFinishDate" />
+      <div class="form-hint">Норма рассчитывается автоматически по формуле в таблице</div>
+    </div>
+    <div class="form-field" id="formNormPreview" style="display:none">
+      <div class="form-label">Текущая норма</div>
+      <div id="formNormValue" style="font-size:18px;font-weight:700;color:var(--accent)"></div>
     </div>
     <div class="form-actions">
       <button class="form-cancel" onclick="closeProjectFormModal()">Отмена</button>
@@ -776,7 +780,7 @@
   // =====================================================
   // НАСТРОЙКА — замени на свой URL
   // =====================================================
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbwx4mo2XgKN7rVoK82kmfezaERZRg477mDQGQk4A1N7FzEimGR2vqE-IKRr28uBY3MI/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxrGlVAyv27ehIUzxKabjJFw7OvsDSxd3M-ZiBvqbHI2XX0ov9vvCZExtgZ8L_nSFIW/exec";
 
   // =====================================================
   // Telegram WebApp init
@@ -1204,21 +1208,42 @@
       list.innerHTML = '<div class="no-data"><span class="no-data-emoji">🗂️</span>Нет активных проектов.</div>';
       return;
     }
-    list.innerHTML = projects.map(p => `
+    list.innerHTML = projects.map(p => {
+      const parts = p.finishDate ? p.finishDate.split('.') : [];
+      const hasRealDate = parts.length === 3 && parts[2] !== '2099';
+      const dateStr = hasRealDate ? 'Срок: ' + p.finishDate : '';
+      const normStr = p.weeklyNorm > 0 ? 'Норма: ' + p.weeklyNorm + ' кр./нед.' : '';
+      const meta = [dateStr, normStr].filter(Boolean).join(' · ') || 'Без срока и нормы';
+      return `
       <div class="manage-card">
         <div class="manage-card-info">
           <div class="manage-card-name">${escapeHtml(p.name)}</div>
-          <div class="manage-card-norm">${p.weeklyNorm > 0 ? 'Норма: ' + p.weeklyNorm + ' кр./нед.' : 'Без нормы'}</div>
+          <div class="manage-card-norm">${meta}</div>
         </div>
         <button class="edit-btn" onclick="openProjectForm('${escapeJs(p.name)}')">Изменить</button>
-      </div>`).join('');
+      </div>`;
+    }).join('');
+  }
+
+  function formatDateForInput(ddmmyyyy) {
+    if (!ddmmyyyy) return '';
+    const parts = ddmmyyyy.split('.');
+    if (parts.length !== 3 || parts[2] === '2099') return '';
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
   }
 
   function openProjectForm(projectName) {
     editingProject = projectName ? projects.find(p => p.name === projectName) : null;
     document.getElementById('formModalTitle').textContent = editingProject ? 'Изменить проект' : 'Новый проект';
     document.getElementById('formName').value = editingProject ? editingProject.name : '';
-    document.getElementById('formNorm').value = editingProject ? (editingProject.weeklyNorm || '') : '';
+    document.getElementById('formFinishDate').value = editingProject ? formatDateForInput(editingProject.finishDate) : '';
+    const preview = document.getElementById('formNormPreview');
+    if (editingProject && editingProject.weeklyNorm > 0) {
+      preview.style.display = '';
+      document.getElementById('formNormValue').textContent = editingProject.weeklyNorm + ' кр./нед.';
+    } else {
+      preview.style.display = 'none';
+    }
     document.getElementById('formSubmitBtn').disabled = false;
     document.getElementById('formSubmitBtn').textContent = 'Сохранить';
     document.getElementById('projectFormModal').classList.add('show');
@@ -1235,7 +1260,7 @@
 
   async function submitProjectForm() {
     const name = document.getElementById('formName').value.trim();
-    const norm = parseInt(document.getElementById('formNorm').value) || 0;
+    const finishDate = document.getElementById('formFinishDate').value; // "YYYY-MM-DD" or ""
 
     if (!name) { showToast('Введи название проекта'); return; }
 
@@ -1246,15 +1271,16 @@
     try {
       let params;
       if (editingProject) {
-        params = { action: 'updateProject', originalName: editingProject.name, name, weeklyNorm: norm };
+        params = { action: 'updateProject', originalName: editingProject.name, name, finishDate };
       } else {
-        params = { action: 'addProject', name, weeklyNorm: norm };
+        params = { action: 'addProject', name, finishDate };
       }
 
       const data = await apiGet(params);
       if (data.success) {
+        const normMsg = data.weeklyNorm > 0 ? ` Норма: ${data.weeklyNorm} кр./нед.` : '';
         closeProjectFormModal();
-        showToast(editingProject ? '✅ Проект обновлён!' : '✅ Проект добавлен!');
+        showToast((editingProject ? '✅ Проект обновлён!' : '✅ Проект добавлен!') + normMsg);
         // Перезагружаем список проектов
         const freshData = await apiGet({ action: 'getProjects' });
         projects = freshData.projects || [];

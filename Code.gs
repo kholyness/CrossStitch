@@ -345,7 +345,7 @@ function doGet(e) {
   // --- ADD PROJECT ---
   } else if (action === 'addProject') {
     const name = (e.parameter.name || '').trim();
-    const weeklyNorm = parseFloat((e.parameter.weeklyNorm || '0').replace(',', '.')) || 0;
+    const finishDateStr = (e.parameter.finishDate || '').trim(); // "YYYY-MM-DD"
 
     if (!name) {
       result = { error: 'Название не указано' };
@@ -369,11 +369,19 @@ function doGet(e) {
         if (emptyRow === -1) {
           result = { error: 'Нет свободных строк в таблице (максимум 49 проектов)' };
         } else {
-          projectSheet.getRange(emptyRow, 2).setValue(name);           // Столбец B — название
-          projectSheet.getRange(emptyRow, 15).setValue(weeklyNorm);    // Столбец O — норма в неделю
-          projectSheet.getRange(emptyRow, 6).setValue(new Date(2099, 11, 31)); // Столбец F — дата завершения
+          let finishDate;
+          if (finishDateStr) {
+            const parts = finishDateStr.split('-');
+            finishDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+          } else {
+            finishDate = new Date(2099, 11, 31);
+          }
+          projectSheet.getRange(emptyRow, 2).setValue(name);   // Столбец B — название
+          projectSheet.getRange(emptyRow, 6).setValue(finishDate); // Столбец F — дата завершения
           SpreadsheetApp.flush();
-          result = { success: true };
+          // Читаем рассчитанную норму из формулы
+          const weeklyNorm = parseFloat(projectSheet.getRange(emptyRow, 15).getValue()) || 0;
+          result = { success: true, weeklyNorm: weeklyNorm };
         }
       }
     }
@@ -382,7 +390,7 @@ function doGet(e) {
   } else if (action === 'updateProject') {
     const originalName = (e.parameter.originalName || '').trim();
     const name = (e.parameter.name || '').trim();
-    const weeklyNorm = parseFloat((e.parameter.weeklyNorm || '0').replace(',', '.')) || 0;
+    const finishDateStr = (e.parameter.finishDate || '').trim(); // "YYYY-MM-DD"
 
     if (!originalName || !name) {
       result = { error: 'Параметры не указаны' };
@@ -399,9 +407,15 @@ function doGet(e) {
         result = { error: 'Проект не найден' };
       } else {
         projectSheet.getRange(targetRow, 2).setValue(name);
-        projectSheet.getRange(targetRow, 15).setValue(weeklyNorm);
+        if (finishDateStr) {
+          const parts = finishDateStr.split('-');
+          const finishDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+          projectSheet.getRange(targetRow, 6).setValue(finishDate); // Столбец F — дата завершения
+        }
         SpreadsheetApp.flush();
-        result = { success: true };
+        // Читаем рассчитанную норму из формулы
+        const weeklyNorm = parseFloat(projectSheet.getRange(targetRow, 15).getValue()) || 0;
+        result = { success: true, weeklyNorm: weeklyNorm };
       }
     }
 
