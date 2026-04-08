@@ -911,7 +911,7 @@
     const isSelected = selectedProject && selectedProject.name === p.name;
 
     const normText = p.weeklyNorm > 0
-      ? (normDone ? 'Норма выполнена' : `осталось ${p.leftWeek} кр. из ${p.weeklyNorm}`)
+      ? (normDone ? '✅ Норма выполнена' : `осталось ${p.leftWeek} кр. из ${p.weeklyNorm}`)
       : '';
 
     return `
