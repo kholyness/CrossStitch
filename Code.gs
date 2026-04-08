@@ -305,6 +305,38 @@ function doGet(e) {
       result = { success: true, leftWeek: leftWeek, progress: progress, count: count };
     }
 
+  // --- GET YEARLY STATS ---
+  } else if (action === 'getYearlyStats') {
+    const year = today.getFullYear();
+    const lastRow = logSheet.getLastRow();
+    if (lastRow < 2) {
+      result = { months: [], year: year };
+    } else {
+      const logData = logSheet.getRange("A2:C" + lastRow).getValues();
+      const monthTotals = new Array(12).fill(0);
+
+      for (let i = 0; i < logData.length; i++) {
+        let cellDateRaw = logData[i][0];
+        if (!cellDateRaw) continue;
+        let entryDate;
+        if (cellDateRaw instanceof Date) {
+          entryDate = cellDateRaw;
+        } else {
+          let parts = cellDateRaw.toString().split(".");
+          if (parts.length < 3) continue;
+          entryDate = new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+        if (entryDate.getFullYear() === year) {
+          let count = parseFloat(logData[i][2]) || 0;
+          monthTotals[entryDate.getMonth()] += count;
+        }
+      }
+
+      const months = monthTotals.map((total, idx) => ({ month: idx + 1, total: total }));
+      const totalYear = monthTotals.reduce((a, b) => a + b, 0);
+      result = { months: months, year: year, totalYear: totalYear };
+    }
+
   } else {
     result = { error: 'Неизвестный action' };
   }

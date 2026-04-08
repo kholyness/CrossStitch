@@ -343,6 +343,67 @@
     }
     .no-data-emoji { font-size: 40px; display: block; margin-bottom: 10px; }
 
+    /* ---- YEARLY STATS ---- */
+    .year-header {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .year-total { font-size: 36px; font-weight: 800; color: var(--accent); }
+    .year-total-label { font-size: 14px; color: var(--text2); }
+    .year-subtitle { font-size: 13px; color: var(--text2); margin-bottom: 4px; }
+    .month-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+    }
+    .month-row.current-month {
+      border: 2px solid var(--accent);
+    }
+    .month-label {
+      width: 36px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text2);
+      flex-shrink: 0;
+      text-align: right;
+    }
+    .month-label.current-month { color: var(--accent); }
+    .month-bar-wrap {
+      flex: 1;
+      height: 10px;
+      background: var(--border);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .month-bar {
+      height: 100%;
+      border-radius: 5px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.6s ease;
+    }
+    .month-bar.current-month {
+      background: linear-gradient(90deg, var(--green), #8bc99e);
+    }
+    .month-bar.future { background: var(--border); }
+    .month-count {
+      width: 52px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .month-count.zero { color: var(--text2); font-weight: 400; }
+
     /* ---- LOADER ---- */
     .loader {
       text-align: center;
@@ -469,9 +530,9 @@
     <span class="nav-icon">📊</span>
     Неделя
   </div>
-  <div class="nav-item" id="nav-projects" onclick="switchPage('projects')">
-    <span class="nav-icon">📂</span>
-    Проекты
+  <div class="nav-item" id="nav-year" onclick="switchPage('year')">
+    <span class="nav-icon">📅</span>
+    Год
   </div>
 </nav>
 
@@ -491,10 +552,9 @@
   </div>
 </div>
 
-<!-- PAGE: ALL PROJECTS -->
-<div class="page" id="page-projects">
-  <div class="section-title">Все активные проекты</div>
-  <div class="projects-list" id="allProjectsList">
+<!-- PAGE: YEAR -->
+<div class="page" id="page-year">
+  <div id="yearContent">
     <div class="loader"><div class="spinner"></div>Загружаем…</div>
   </div>
 </div>
@@ -519,7 +579,7 @@
   // =====================================================
   // НАСТРОЙКА — замени на свой URL
   // =====================================================
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbxnvbBB0cRcvpObvJTkb1Mg56YQqMZFvxsKeqMp6orSh731-6YVz18WhIeu3WCodQ24/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzIVnBMOjaaNoEaR-M68ABTZOJd2GdBrZzepWwAg5lJsEAQt-Jc5J74HdToEzfAZg4N/exec";
 
   // =====================================================
   // Telegram WebApp init
@@ -578,10 +638,20 @@
       const data = await apiGet({ action: 'getProjects' });
       projects = data.projects || [];
       renderTodayProjects();
-      renderAllProjects();
     } catch (err) {
       document.getElementById('todayProjectList').innerHTML =
         '<div class="no-data"><span class="no-data-emoji">⚠️</span>Ошибка загрузки.<br>Проверь URL в коде.</div>';
+    }
+  }
+
+  async function loadYearlyStats() {
+    const el = document.getElementById('yearContent');
+    el.innerHTML = '<div class="loader"><div class="spinner"></div>Загружаем…</div>';
+    try {
+      const data = await apiGet({ action: 'getYearlyStats' });
+      renderYearlyStats(data);
+    } catch (err) {
+      el.innerHTML = '<div class="no-data"><span class="no-data-emoji">⚠️</span>Ошибка загрузки.</div>';
     }
   }
 
@@ -629,15 +699,6 @@
       </div>`;
   }
 
-  function renderAllProjects() {
-    const list = document.getElementById('allProjectsList');
-    if (!projects.length) {
-      list.innerHTML = '<div class="no-data"><span class="no-data-emoji">🎉</span>Нет активных проектов</div>';
-      return;
-    }
-    list.innerHTML = projects.map(p => projectCardHTML(p, false)).join('');
-  }
-
   function projectCardHTML(p, clickable, idx) {
     const pct = Math.round(p.progress * 100);
     const hasTodayCount = p.todayCount > 0;
@@ -664,6 +725,41 @@
           ${normText ? `<span class="card-norm${normDone ? ' done' : ''}">${normText}</span>` : ''}
         </div>
       </div>`;
+  }
+
+  function renderYearlyStats(data) {
+    const el = document.getElementById('yearContent');
+    const months = data.months || [];
+    const year = data.year || new Date().getFullYear();
+    const totalYear = data.totalYear || 0;
+    const nowMonth = new Date().getMonth(); // 0-based
+
+    const monthNames = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+    const maxVal = Math.max(...months.map(m => m.total), 1);
+
+    let rowsHTML = months.map(m => {
+      const idx = m.month - 1;
+      const isCurrent = idx === nowMonth;
+      const isFuture = idx > nowMonth;
+      const pct = isFuture ? 0 : Math.round((m.total / maxVal) * 100);
+
+      return `
+        <div class="month-row${isCurrent ? ' current-month' : ''}">
+          <div class="month-label${isCurrent ? ' current-month' : ''}">${monthNames[idx]}</div>
+          <div class="month-bar-wrap">
+            <div class="month-bar${isCurrent ? ' current-month' : isFuture ? ' future' : ''}" style="width:${pct}%"></div>
+          </div>
+          <div class="month-count${m.total === 0 ? ' zero' : ''}">${isFuture ? '—' : m.total.toLocaleString('ru')}</div>
+        </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="year-header">
+        <div class="year-subtitle">${year} год</div>
+        <div class="year-total">${totalYear.toLocaleString('ru')}</div>
+        <div class="year-total-label">крестиков за год</div>
+      </div>
+      ${rowsHTML}`;
   }
 
   function renderWeeklyStats(data) {
@@ -799,7 +895,6 @@
 
         showToast(msg);
         renderTodayProjects();
-        renderAllProjects();
       } else {
         showToast('Ошибка сохранения 😢');
       }
@@ -848,6 +943,7 @@
     document.getElementById('nav-' + name).classList.add('active');
 
     if (name === 'week') loadWeeklyStats();
+    if (name === 'year') loadYearlyStats();
   }
 
   // =====================================================
