@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>CrossStitch</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #f5f0eb;
+      --surface: #ffffff;
+      --surface2: #fdf8f5;
+      --border: #e8ddd5;
+      --text: #2d1f18;
+      --text2: #7a5e52;
+      --accent: #c0624a;
+      --accent2: #e8957a;
+      --accent-light: #fde8e2;
+      --green: #5a9a6e;
+      --green-light: #e2f5e9;
+      --gold: #c9963a;
+      --gold-light: #fdf3e0;
+      --radius: 16px;
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+      --nav-height: 64px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1210;
+        --surface: #261a16;
+        --surface2: #2f201a;
+        --border: #3d2820;
+        --text: #f5ede8;
+        --text2: #b89080;
+        --accent: #e07860;
+        --accent2: #f0a090;
+        --accent-light: #3d1f18;
+        --green: #6ab880;
+        --green-light: #1a3020;
+        --gold: #d4a84a;
+        --gold-light: #3a2a10;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: calc(var(--nav-height) + 16px);
+      overflow-x: hidden;
+    }
+
+    /* ---- HEADER ---- */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.3px;
+    }
+    .header-title span { color: var(--text); }
+    .header-date {
+      font-size: 13px;
+      color: var(--text2);
+      margin-top: 2px;
+    }
+    .fortune-btn {
+      background: var(--accent-light);
+      border: none;
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 15px;
+      cursor: pointer;
+      color: var(--accent);
+      font-weight: 600;
+      transition: opacity 0.15s;
+    }
+    .fortune-btn:active { opacity: 0.7; }
+
+    /* ---- TABS ---- */
+    .tabs {
+      display: flex;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 4px;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px 4px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text2);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .tab.active {
+      color: var(--accent);
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    .tab-icon { font-size: 18px; display: block; margin-bottom: 2px; }
+
+    /* ---- PAGES ---- */
+    .page { display: none; padding: 16px; }
+    .page.active { display: block; }
+
+    /* ---- SELECTED PROJECT BANNER ---- */
+    .selected-banner {
+      background: var(--accent);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: white;
+    }
+    .selected-banner.hidden { display: none; }
+    .selected-name { font-weight: 700; font-size: 15px; }
+    .selected-hint { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+    .clear-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 12px;
+      padding: 4px 10px;
+      cursor: pointer;
+    }
+
+    /* ---- STITCH INPUT ---- */
+    .stitch-input-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+      display: none;
+    }
+    .stitch-input-card.visible { display: block; }
+    .input-label {
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+    .counter-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .counter-btn {
+      width: 48px; height: 48px;
+      border-radius: 14px;
+      border: none;
+      font-size: 24px;
+      font-weight: 300;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.1s, opacity 0.1s;
+      flex-shrink: 0;
+    }
+    .counter-btn:active { transform: scale(0.92); }
+    .btn-minus { background: var(--accent-light); color: var(--accent); }
+    .btn-plus { background: var(--accent); color: white; }
+    .counter-input {
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 8px;
+      background: var(--bg);
+      outline: none;
+      -moz-appearance: textfield;
+      box-sizing: border-box;
+    }
+    .counter-input::-webkit-inner-spin-button,
+    .counter-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .counter-input:focus { border-color: var(--accent); }
+    .save-btn {
+      width: 100%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .save-btn:active { opacity: 0.85; transform: scale(0.98); }
+    .save-btn:disabled { opacity: 0.5; cursor: default; }
+
+    /* ---- TOAST ---- */
+    .toast {
+      position: fixed;
+      bottom: calc(var(--nav-height) + 20px);
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--text);
+      color: var(--bg);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      z-index: 200;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ---- PROJECT CARDS ---- */
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    .projects-list { display: flex; flex-direction: column; gap: 10px; }
+    .project-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.2s, transform 0.1s;
+      position: relative;
+      overflow: hidden;
+    }
+    .project-card:active { transform: scale(0.98); }
+    .project-card.selected {
+      border-color: var(--accent);
+    }
+    .project-card.done-today::after {
+      content: "✓";
+      position: absolute;
+      top: 12px; right: 14px;
+      width: 22px; height: 22px;
+      background: var(--green);
+      color: white;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center;
+      line-height: 22px;
+    }
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .card-name {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text);
+      flex: 1;
+      padding-right: 28px;
+    }
+    .card-today {
+      font-size: 12px;
+      color: var(--green);
+      font-weight: 600;
+      background: var(--green-light);
+      padding: 3px 8px;
+      border-radius: 8px;
+    }
+    .progress-bar-wrap {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .progress-bar {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.5s ease;
+    }
+    .card-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text2);
+    }
+    .card-norm {
+      color: var(--gold);
+      font-weight: 600;
+    }
+    .card-norm.done { color: var(--green); }
+
+    /* ---- WEEKLY STATS ---- */
+    .week-header {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .week-date { font-size: 13px; color: var(--text2); margin-bottom: 4px; }
+    .week-total { font-size: 36px; font-weight: 800; color: var(--accent); }
+    .week-total-label { font-size: 14px; color: var(--text2); }
+    .stat-item {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+    }
+    .stat-name { font-weight: 600; font-size: 15px; margin-bottom: 8px; }
+    .stat-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .stat-bar-wrap {
+      flex: 1;
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .stat-bar {
+      height: 100%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+    .stat-count { font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; }
+    .stat-norm { font-size: 12px; color: var(--text2); margin-top: 4px; text-align: right; }
+    .no-data {
+      text-align: center;
+      color: var(--text2);
+      font-size: 15px;
+      padding: 40px 20px;
+    }
+    .no-data-emoji { font-size: 40px; display: block; margin-bottom: 10px; }
+
+    /* ---- LOADER ---- */
+    .loader {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text2);
+      font-size: 15px;
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---- BOTTOM NAV ---- */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: var(--nav-height);
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      z-index: 100;
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--text2);
+      font-weight: 500;
+      gap: 3px;
+      transition: color 0.2s;
+    }
+    .nav-item.active { color: var(--accent); }
+    .nav-icon { font-size: 22px; }
+
+    /* ---- FORTUNE MODAL ---- */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 300;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .modal-overlay.show { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--surface);
+      border-radius: 24px 24px 0 0;
+      padding: 24px 24px 40px;
+      width: 100%;
+      max-width: 500px;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      text-align: center;
+    }
+    .modal-overlay.show .modal { transform: translateY(0); }
+    .modal-icon { font-size: 48px; margin-bottom: 12px; }
+    .modal-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    .modal-subtitle { font-size: 15px; color: var(--text2); margin-bottom: 24px; }
+    .modal-project {
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 18px;
+      font-weight: 700;
+      padding: 14px 20px;
+      border-radius: 14px;
+      margin-bottom: 20px;
+    }
+    .modal-btn {
+      width: 100%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    .modal-btn-secondary {
+      width: 100%;
+      background: transparent;
+      color: var(--text2);
+      border: none;
+      padding: 10px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-title">🧵 Cross<span>Stitch</span></div>
+      <div class="header-date" id="headerDate">—</div>
+    </div>
+    <button class="fortune-btn" onclick="showFortune()">🎡 Фортуна</button>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <div class="nav-item active" id="nav-today" onclick="switchPage('today')">
+    <span class="nav-icon">🪡</span>
+    Вышиваем
+  </div>
+  <div class="nav-item" id="nav-week" onclick="switchPage('week')">
+    <span class="nav-icon">📊</span>
+    Неделя
+  </div>
+  <div class="nav-item" id="nav-projects" onclick="switchPage('projects')">
+    <span class="nav-icon">📂</span>
+    Проекты
+  </div>
+</nav>
+
+<!-- PAGE: TODAY -->
+<div class="page active" id="page-today">
+  <!-- Selected project banner -->
+  <div class="selected-banner hidden" id="selectedBanner">
+    <div>
+      <div class="selected-name" id="selectedName"></div>
+      <div class="selected-hint">выбран проект</div>
+    </div>
+    <button class="clear-btn" onclick="clearSelected()">сменить</button>
+  </div>
+
+  <!-- Stitch input -->
+  <div class="stitch-input-card" id="stitchInputCard">
+    <div class="input-label">Сколько крестиков сегодня?</div>
+    <div class="counter-row">
+      <button class="counter-btn btn-minus" onclick="changeCount(-1)">−</button>
+      <input type="number" class="counter-input" id="countInput" value="0" min="0" inputmode="numeric" />
+      <button class="counter-btn btn-plus" onclick="changeCount(1)">+</button>
+    </div>
+    <button class="save-btn" id="saveBtn" onclick="saveStitches()">Сохранить</button>
+  </div>
+
+  <!-- Project list -->
+  <div class="section-title">Выбери проект</div>
+  <div class="projects-list" id="todayProjectList">
+    <div class="loader"><div class="spinner"></div>Загружаем проекты…</div>
+  </div>
+</div>
+
+<!-- PAGE: WEEK -->
+<div class="page" id="page-week">
+  <div id="weekContent">
+    <div class="loader"><div class="spinner"></div>Загружаем статистику…</div>
+  </div>
+</div>
+
+<!-- PAGE: ALL PROJECTS -->
+<div class="page" id="page-projects">
+  <div class="section-title">Все активные проекты</div>
+  <div class="projects-list" id="allProjectsList">
+    <div class="loader"><div class="spinner"></div>Загружаем…</div>
+  </div>
+</div>
+
+<!-- FORTUNE MODAL -->
+<div class="modal-overlay" id="fortuneModal" onclick="closeFortune(event)">
+  <div class="modal">
+    <div class="modal-icon">🎡</div>
+    <div class="modal-title">Фортуна выбрала!</div>
+    <div class="modal-subtitle">Сегодня вышиваем:</div>
+    <div class="modal-project" id="fortuneProject"></div>
+    <button class="modal-btn" onclick="selectFortuneProject()">Выбрать этот проект</button>
+    <button class="modal-btn-secondary" onclick="showFortune()">Крутить ещё раз</button>
+    <button class="modal-btn-secondary" onclick="closeFortuneModal()">Отмена</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // =====================================================
+  // НАСТРОЙКА — замени на свой URL
+  // =====================================================
+  const GAS_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";
+
+  // =====================================================
+  // Telegram WebApp init
+  // =====================================================
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.ready();
+    tg.expand();
+    // Применяем цвета Telegram если они есть
+    const tp = tg.themeParams;
+    if (tp) {
+      if (tp.bg_color) document.documentElement.style.setProperty('--bg', tp.bg_color);
+      if (tp.secondary_bg_color) document.documentElement.style.setProperty('--surface', tp.secondary_bg_color);
+      if (tp.text_color) document.documentElement.style.setProperty('--text', tp.text_color);
+      if (tp.hint_color) document.documentElement.style.setProperty('--text2', tp.hint_color);
+      if (tp.button_color) document.documentElement.style.setProperty('--accent', tp.button_color);
+      if (tp.button_text_color) document.documentElement.style.setProperty('--accent-text', tp.button_text_color);
+    }
+  }
+
+  // =====================================================
+  // State
+  // =====================================================
+  let projects = [];
+  let selectedProject = null;
+  let fortuneSelected = null;
+
+  // =====================================================
+  // Init
+  // =====================================================
+  function init() {
+    setHeaderDate();
+    loadProjects();
+  }
+
+  function setHeaderDate() {
+    const now = new Date();
+    const days = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+    const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+    document.getElementById('headerDate').textContent =
+      days[now.getDay()] + ', ' + now.getDate() + ' ' + months[now.getMonth()];
+  }
+
+  // =====================================================
+  // API calls
+  // =====================================================
+  async function apiGet(params) {
+    const url = GAS_URL + '?' + new URLSearchParams(params).toString();
+    const resp = await fetch(url);
+    return resp.json();
+  }
+
+  async function loadProjects() {
+    try {
+      const data = await apiGet({ action: 'getProjects' });
+      projects = data.projects || [];
+      renderTodayProjects();
+      renderAllProjects();
+    } catch (err) {
+      document.getElementById('todayProjectList').innerHTML =
+        '<div class="no-data"><span class="no-data-emoji">⚠️</span>Ошибка загрузки.<br>Проверь URL в коде.</div>';
+    }
+  }
+
+  async function loadWeeklyStats() {
+    const el = document.getElementById('weekContent');
+    el.innerHTML = '<div class="loader"><div class="spinner"></div>Загружаем…</div>';
+    try {
+      const data = await apiGet({ action: 'getWeeklyStats' });
+      renderWeeklyStats(data);
+    } catch (err) {
+      el.innerHTML = '<div class="no-data"><span class="no-data-emoji">⚠️</span>Ошибка загрузки.</div>';
+    }
+  }
+
+  // =====================================================
+  // Rendering
+  // =====================================================
+  function renderTodayProjects() {
+    const list = document.getElementById('todayProjectList');
+    if (!projects.length) {
+      list.innerHTML = '<div class="no-data"><span class="no-data-emoji">🎉</span>Все проекты завершены!</div>';
+      return;
+    }
+    list.innerHTML = projects.map(p => projectCardHTML(p, true)).join('');
+  }
+
+  function renderAllProjects() {
+    const list = document.getElementById('allProjectsList');
+    if (!projects.length) {
+      list.innerHTML = '<div class="no-data"><span class="no-data-emoji">🎉</span>Нет активных проектов</div>';
+      return;
+    }
+    list.innerHTML = projects.map(p => projectCardHTML(p, false)).join('');
+  }
+
+  function projectCardHTML(p, clickable) {
+    const pct = Math.round(p.progress * 100);
+    const hasTodayCount = p.todayCount > 0;
+    const normDone = p.weeklyNorm > 0 && p.leftWeek <= 0;
+    const isSelected = selectedProject && selectedProject.name === p.name;
+
+    const normText = p.weeklyNorm > 0
+      ? (normDone ? '✅ Норма выполнена' : `осталось ${p.leftWeek} кр. из ${p.weeklyNorm}`)
+      : '';
+
+    return `
+      <div class="project-card${hasTodayCount ? ' done-today' : ''}${isSelected ? ' selected' : ''}"
+           onclick="${clickable ? `selectProject('${escapeJs(p.name)}')` : ''}">
+        <div class="card-top">
+          <div class="card-name">${escapeHtml(p.name)}</div>
+          ${hasTodayCount ? `<div class="card-today">+${p.todayCount} сегодня</div>` : ''}
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" style="width:${pct}%"></div>
+        </div>
+        <div class="card-meta">
+          <span>${pct}% выполнено</span>
+          ${normText ? `<span class="card-norm${normDone ? ' done' : ''}">${normText}</span>` : ''}
+        </div>
+      </div>`;
+  }
+
+  function renderWeeklyStats(data) {
+    const el = document.getElementById('weekContent');
+    const stats = data.stats || {};
+    const keys = Object.keys(stats);
+
+    if (!keys.length) {
+      el.innerHTML = `
+        <div class="week-header">
+          <div class="week-date">${data.dateRange || ''}</div>
+          <div class="week-total">0</div>
+          <div class="week-total-label">крестиков за неделю</div>
+        </div>
+        <div class="no-data"><span class="no-data-emoji">🪡</span>Записей за эту неделю пока нет.</div>`;
+      return;
+    }
+
+    const maxDone = Math.max(...keys.map(k => stats[k].done));
+
+    let itemsHTML = keys
+      .sort((a, b) => stats[b].done - stats[a].done)
+      .map(proj => {
+        const s = stats[proj];
+        const barPct = maxDone > 0 ? Math.round((s.done / maxDone) * 100) : 0;
+        const normPct = s.norm > 0 ? Math.min(100, Math.round((s.done / s.norm) * 100)) : null;
+        return `
+          <div class="stat-item">
+            <div class="stat-name">${escapeHtml(proj)}</div>
+            <div class="stat-bar-row">
+              <div class="stat-bar-wrap">
+                <div class="stat-bar" style="width:${barPct}%"></div>
+              </div>
+              <div class="stat-count">${s.done} кр.</div>
+            </div>
+            ${s.norm > 0 ? `<div class="stat-norm">Норма: ${s.done}/${s.norm} (${normPct}%)</div>` : ''}
+          </div>`;
+      }).join('');
+
+    el.innerHTML = `
+      <div class="week-header">
+        <div class="week-date">${data.dateRange || ''}</div>
+        <div class="week-total">${data.totalSum}</div>
+        <div class="week-total-label">крестиков за неделю</div>
+      </div>
+      ${itemsHTML}`;
+  }
+
+  // =====================================================
+  // Project selection
+  // =====================================================
+  function selectProject(name) {
+    const project = projects.find(p => p.name === name);
+    if (!project) return;
+
+    // Toggle: повторный клик по выбранному проекту — скрыть поле ввода
+    if (selectedProject && selectedProject.name === name) {
+      clearSelected();
+      return;
+    }
+
+    selectedProject = project;
+
+    document.getElementById('selectedName').textContent = selectedProject.name;
+    document.getElementById('selectedBanner').classList.remove('hidden');
+    document.getElementById('stitchInputCard').classList.add('visible');
+
+    // Pre-fill today's count if exists
+    const val = selectedProject.todayCount || 0;
+    document.getElementById('countInput').value = val;
+
+    // Refresh project list to show selection
+    renderTodayProjects();
+
+    // Scroll to input
+    setTimeout(() => {
+      document.getElementById('stitchInputCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+  }
+
+  function clearSelected() {
+    selectedProject = null;
+    document.getElementById('selectedBanner').classList.add('hidden');
+    document.getElementById('stitchInputCard').classList.remove('visible');
+    renderTodayProjects();
+  }
+
+  // =====================================================
+  // Counter
+  // =====================================================
+  function changeCount(delta) {
+    const input = document.getElementById('countInput');
+    const val = Math.max(0, (parseInt(input.value) || 0) + delta);
+    input.value = val;
+  }
+
+  function setCount(val) {
+    document.getElementById('countInput').value = val;
+  }
+
+  // =====================================================
+  // Save stitches
+  // =====================================================
+  async function saveStitches() {
+    if (!selectedProject) return;
+
+    const count = parseFloat(document.getElementById('countInput').value) || 0;
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Сохраняем…';
+
+    try {
+      const data = await apiGet({
+        action: 'logStitches',
+        project: selectedProject.name,
+        count: count
+      });
+
+      if (data.success) {
+        // Update local state
+        selectedProject.todayCount = count;
+        selectedProject.leftWeek = data.leftWeek;
+        selectedProject.progress = data.progress;
+        const idx = projects.findIndex(p => p.name === selectedProject.name);
+        if (idx !== -1) projects[idx] = { ...projects[idx], ...selectedProject };
+
+        let msg = `✅ ${count} кр. сохранено!`;
+        if (data.progress >= 1) msg = '🎉 ФИНИШ! Проект завершён!';
+        else if (data.leftWeek <= 0) msg = '🎉 Недельная норма выполнена!';
+        else if (data.leftWeek > 0) msg += ` Осталось: ${data.leftWeek} кр.`;
+
+        showToast(msg);
+        renderTodayProjects();
+        renderAllProjects();
+      } else {
+        showToast('Ошибка сохранения 😢');
+      }
+    } catch (err) {
+      showToast('Ошибка сети 😢');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Сохранить';
+    }
+  }
+
+  // =====================================================
+  // Fortune
+  // =====================================================
+  function showFortune() {
+    if (!projects.length) { showToast('Нет активных проектов!'); return; }
+    const p = projects[Math.floor(Math.random() * projects.length)];
+    fortuneSelected = p;
+    document.getElementById('fortuneProject').textContent = p.name;
+    document.getElementById('fortuneModal').classList.add('show');
+  }
+
+  function selectFortuneProject() {
+    closeFortuneModal();
+    if (fortuneSelected) {
+      switchPage('today');
+      selectProject(fortuneSelected.name);
+    }
+  }
+
+  function closeFortuneModal() {
+    document.getElementById('fortuneModal').classList.remove('show');
+  }
+
+  function closeFortune(e) {
+    if (e.target === document.getElementById('fortuneModal')) closeFortuneModal();
+  }
+
+  // =====================================================
+  // Navigation
+  // =====================================================
+  function switchPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    document.getElementById('nav-' + name).classList.add('active');
+
+    if (name === 'week') loadWeeklyStats();
+  }
+
+  // =====================================================
+  // Toast
+  // =====================================================
+  let toastTimer;
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+  }
+
+  // =====================================================
+  // Helpers
+  // =====================================================
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function escapeJs(s) {
+    return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  }
+
+  // =====================================================
+  // Start
+  // =====================================================
+  init();
+</script>
+</body>
+</html>
