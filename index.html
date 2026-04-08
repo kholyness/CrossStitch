@@ -93,31 +93,6 @@
     }
     .fortune-btn:active { opacity: 0.7; }
 
-    /* ---- TABS ---- */
-    .tabs {
-      display: flex;
-      background: var(--surface2);
-      border-bottom: 1px solid var(--border);
-      padding: 0 4px;
-    }
-    .tab {
-      flex: 1;
-      padding: 10px 4px;
-      text-align: center;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text2);
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: color 0.2s, border-color 0.2s;
-    }
-    .tab.active {
-      color: var(--accent);
-      border-color: var(--accent);
-      font-weight: 600;
-    }
-    .tab-icon { font-size: 18px; display: block; margin-bottom: 2px; }
-
     /* ---- PAGES ---- */
     .page { display: none; padding: 16px; }
     .page.active { display: block; }
@@ -815,7 +790,7 @@
   // =====================================================
   // НАСТРОЙКА — замени на свой URL
   // =====================================================
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbxhpYjSviIkTbG5hE_myeD3OFP8wNxOhA27AQPJajiIQHbMhPHiVplvi1rkMeCfLU-C/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbydpiTbrKw3OmRwVHjZQuvjTpE6NA103nUAiwWbA0S0KTWc5XgakS7NeYnRe8cd8vvT/exec";
 
   // =====================================================
   // Telegram WebApp init
@@ -1147,10 +1122,6 @@
     input.value = val;
   }
 
-  function setCount(val) {
-    document.getElementById('countInput').value = val;
-  }
-
   // =====================================================
   // Save stitches
   // =====================================================
@@ -1353,11 +1324,10 @@
         renderTodayProjects();
       } else {
         showToast(data.error || 'Ошибка сохранения');
-        btn.disabled = false;
-        btn.textContent = 'Сохранить';
       }
     } catch (err) {
       showToast('Ошибка сети 😢');
+    } finally {
       btn.disabled = false;
       btn.textContent = 'Сохранить';
     }

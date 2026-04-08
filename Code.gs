@@ -3,6 +3,7 @@
 // =====================================================
 const TOKEN = "YOUR_BOT_TOKEN";
 const SHEET_ID = "YOUR_SHEET_ID";
+const TZ = "GMT+1";
 
 // =====================================================
 // Telegram Bot webhook handler
@@ -19,7 +20,7 @@ function doPost(e) {
     const fullRange = projectSheet.getRange("A2:P50").getValues();
 
     const today = new Date();
-    const todayStr = Utilities.formatDate(today, "GMT+1", "dd.MM.yyyy");
+    const todayStr = Utilities.formatDate(today, TZ, "dd.MM.yyyy");
 
     const activeProjects = fullRange
       .filter(row => {
@@ -32,11 +33,7 @@ function doPost(e) {
 
     // --- 📊 ИТОГИ ---
     if (text === "📊 ИТОГИ") {
-      let startMonday = new Date(today);
-      let day = today.getDay();
-      let diff = (day === 0 ? -6 : 1 - day);
-      startMonday.setDate(today.getDate() + diff);
-      startMonday.setHours(0, 0, 0, 0);
+      let startMonday = getWeekStart(today);
       let endSunday = new Date(startMonday);
       endSunday.setDate(startMonday.getDate() + 6);
       endSunday.setHours(23, 59, 59, 999);
@@ -46,16 +43,8 @@ function doPost(e) {
       let totalSum = 0;
 
       for (let i = 0; i < logData.length; i++) {
-        let cellDateRaw = logData[i][0];
-        if (!cellDateRaw) continue;
-        let entryDate;
-        if (cellDateRaw instanceof Date) {
-          entryDate = cellDateRaw;
-        } else {
-          let parts = cellDateRaw.toString().split(".");
-          if (parts.length < 3) continue;
-          entryDate = new Date(parts[2], parts[1] - 1, parts[0]);
-        }
+        let entryDate = parseDate(logData[i][0]);
+        if (!entryDate) continue;
         if (entryDate >= startMonday && entryDate <= endSunday) {
           let proj = logData[i][1].toString().trim();
           let count = parseFloat(logData[i][2]) || 0;
@@ -64,7 +53,7 @@ function doPost(e) {
         }
       }
 
-      let dateRange = Utilities.formatDate(startMonday, "GMT+1", "dd.MM") + " - " + Utilities.formatDate(endSunday, "GMT+1", "dd.MM");
+      let dateRange = Utilities.formatDate(startMonday, TZ, "dd.MM") + " - " + Utilities.formatDate(endSunday, TZ, "dd.MM");
       let report = "Отчет за неделю (" + dateRange + "):\n\n";
       let hasData = false;
       for (let proj in stats) {
@@ -175,7 +164,7 @@ function doGet(e) {
   const fullRange = projectSheet.getRange("A2:P50").getValues();
 
   const today = new Date();
-  const todayStr = Utilities.formatDate(today, "GMT+1", "dd.MM.yyyy");
+  const todayStr = Utilities.formatDate(today, TZ, "dd.MM.yyyy");
 
   let result;
 
@@ -207,7 +196,7 @@ function doGet(e) {
           progress: parseFloat(row[10]) || 0,
           weeklyNorm: parseFloat(row[14]) || 0,
           leftWeek: parseFloat(row[15]) || 0,
-          finishDate: row[5] ? Utilities.formatDate(new Date(row[5]), "GMT+1", "dd.MM.yyyy") : "",
+          finishDate: row[5] ? Utilities.formatDate(new Date(row[5]), TZ, "dd.MM.yyyy") : "",
           todayCount: todayLog[name] || 0
         };
       });
@@ -216,11 +205,7 @@ function doGet(e) {
 
   // --- GET WEEKLY STATS ---
   } else if (action === 'getWeeklyStats') {
-    let startMonday = new Date(today);
-    let day = today.getDay();
-    let diff = (day === 0 ? -6 : 1 - day);
-    startMonday.setDate(today.getDate() + diff);
-    startMonday.setHours(0, 0, 0, 0);
+    let startMonday = getWeekStart(today);
     let endSunday = new Date(startMonday);
     endSunday.setDate(startMonday.getDate() + 6);
     endSunday.setHours(23, 59, 59, 999);
@@ -235,16 +220,8 @@ function doGet(e) {
       const dayTotals = new Array(7).fill(0); // 0=Пн, ..., 6=Вс
 
       for (let i = 0; i < logData.length; i++) {
-        let cellDateRaw = logData[i][0];
-        if (!cellDateRaw) continue;
-        let entryDate;
-        if (cellDateRaw instanceof Date) {
-          entryDate = cellDateRaw;
-        } else {
-          let parts = cellDateRaw.toString().split(".");
-          if (parts.length < 3) continue;
-          entryDate = new Date(parts[2], parts[1] - 1, parts[0]);
-        }
+        let entryDate = parseDate(logData[i][0]);
+        if (!entryDate) continue;
         if (entryDate >= startMonday && entryDate <= endSunday) {
           let proj = logData[i][1].toString().trim();
           let count = parseFloat(logData[i][2]) || 0;
@@ -272,7 +249,7 @@ function doGet(e) {
         statsWithNorm[proj] = { done: stats[proj], norm: norm };
       }
 
-      let dateRange = Utilities.formatDate(startMonday, "GMT+1", "dd.MM") + " – " + Utilities.formatDate(endSunday, "GMT+1", "dd.MM");
+      let dateRange = Utilities.formatDate(startMonday, TZ, "dd.MM") + " – " + Utilities.formatDate(endSunday, TZ, "dd.MM");
       result = { stats: statsWithNorm, totalSum: totalSum, dateRange: dateRange, dayTotals: dayTotals };
     }
 
@@ -330,16 +307,8 @@ function doGet(e) {
       const monthTotals = new Array(12).fill(0);
 
       for (let i = 0; i < logData.length; i++) {
-        let cellDateRaw = logData[i][0];
-        if (!cellDateRaw) continue;
-        let entryDate;
-        if (cellDateRaw instanceof Date) {
-          entryDate = cellDateRaw;
-        } else {
-          let parts = cellDateRaw.toString().split(".");
-          if (parts.length < 3) continue;
-          entryDate = new Date(parts[2], parts[1] - 1, parts[0]);
-        }
+        let entryDate = parseDate(logData[i][0]);
+        if (!entryDate) continue;
         if (entryDate.getFullYear() === year) {
           let count = parseFloat(logData[i][2]) || 0;
           monthTotals[entryDate.getMonth()] += count;
@@ -443,11 +412,7 @@ function doGet(e) {
 
   // --- GET RECENT LOG ---
   } else if (action === 'getRecentLog') {
-    let startMonday = new Date(today);
-    let day = today.getDay();
-    let diff = (day === 0 ? -6 : 1 - day);
-    startMonday.setDate(today.getDate() + diff);
-    startMonday.setHours(0, 0, 0, 0);
+    let startMonday = getWeekStart(today);
 
     const lastRow = logSheet.getLastRow();
     if (lastRow < 2) {
@@ -456,19 +421,11 @@ function doGet(e) {
       const logData = logSheet.getRange("A2:C" + lastRow).getValues();
       let entries = [];
       for (let i = 0; i < logData.length; i++) {
-        let cellDateRaw = logData[i][0];
-        if (!cellDateRaw) continue;
-        let entryDate;
-        if (cellDateRaw instanceof Date) {
-          entryDate = cellDateRaw;
-        } else {
-          let parts = cellDateRaw.toString().split('.');
-          if (parts.length < 3) continue;
-          entryDate = new Date(parts[2], parts[1] - 1, parts[0]);
-        }
+        let entryDate = parseDate(logData[i][0]);
+        if (!entryDate) continue;
         if (entryDate >= startMonday) {
           let dateStr = logData[i][0] instanceof Date
-            ? Utilities.formatDate(logData[i][0], 'GMT+1', 'dd.MM.yyyy')
+            ? Utilities.formatDate(logData[i][0], TZ, 'dd.MM.yyyy')
             : logData[i][0].toString();
           let proj = logData[i][1] ? logData[i][1].toString().trim() : '';
           if (proj) {
@@ -522,6 +479,22 @@ function doGet(e) {
 // =====================================================
 // Вспомогательные функции
 // =====================================================
+function parseDate(raw) {
+  if (!raw) return null;
+  if (raw instanceof Date) return raw;
+  const parts = raw.toString().split('.');
+  if (parts.length < 3) return null;
+  return new Date(parts[2], parts[1] - 1, parts[0]);
+}
+
+function getWeekStart(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 function sendProjectButtons(chatId, projects) {
   // Кнопка открытия Mini App
   const miniAppUrl = "https://kholyness.github.io/CrossStitch/";
