@@ -678,7 +678,7 @@
   <div class="header-top">
     <div>
       <div class="header-date" id="headerDate">—</div>
-      <div class="header-no-stitch">🚫 <span id="headerDaysNoStitch">—</span> дн. без вышивки</div>
+      <div class="header-no-stitch"><span id="headerDaysNoStitch">—</span> дн. без вышивки</div>
     </div>
     <button class="fortune-btn" onclick="showFortune()">🎡 Фортуна</button>
   </div>
@@ -925,7 +925,7 @@
     const isSelected = selectedProject && selectedProject.name === p.name;
 
     const normText = p.weeklyNorm > 0
-      ? (normDone ? '✅ Норма выполнена' : `осталось ${p.leftWeek} кр. из ${p.weeklyNorm}`)
+      ? (normDone ? 'Норма выполнена' : `осталось ${p.leftWeek} кр. из ${p.weeklyNorm}`)
       : '';
 
     return `
@@ -988,10 +988,6 @@
         <div class="year-stat-card">
           <div class="year-stat-value">${data.finishYear || '—'}</div>
           <div class="year-stat-label">Вышью до конца года</div>
-        </div>
-        <div class="year-stat-card">
-          <div class="year-stat-value">${data.daysNoStitch || '—'}</div>
-          <div class="year-stat-label">Дней без вышивки</div>
         </div>
       </div>`;
 
