@@ -316,8 +316,15 @@ function doGet(e) {
   } else if (action === 'getYearlyStats') {
     const year = today.getFullYear();
     const lastRow = logSheet.getLastRow();
+    const statSheet = ss.getSheetByName("Статистика");
     if (lastRow < 2) {
-      result = { months: [], year: year };
+      result = {
+        months: [], year: year,
+        currentStreak: statSheet ? statSheet.getRange("K7").getDisplayValue() : '',
+        maxStreak: statSheet ? statSheet.getRange("K10").getDisplayValue() : '',
+        finishYear: statSheet ? statSheet.getRange("K13").getDisplayValue() : '',
+        daysNoStitch: statSheet ? statSheet.getRange("K4").getDisplayValue() : ''
+      };
     } else {
       const logData = logSheet.getRange("A2:C" + lastRow).getValues();
       const monthTotals = new Array(12).fill(0);
@@ -341,7 +348,11 @@ function doGet(e) {
 
       const months = monthTotals.map((total, idx) => ({ month: idx + 1, total: total }));
       const totalYear = monthTotals.reduce((a, b) => a + b, 0);
-      result = { months: months, year: year, totalYear: totalYear };
+      const currentStreak = statSheet ? statSheet.getRange("K7").getDisplayValue() : '';
+      const maxStreak = statSheet ? statSheet.getRange("K10").getDisplayValue() : '';
+      const finishYear = statSheet ? statSheet.getRange("K13").getDisplayValue() : '';
+      const daysNoStitch = statSheet ? statSheet.getRange("K4").getDisplayValue() : '';
+      result = { months: months, year: year, totalYear: totalYear, currentStreak: currentStreak, maxStreak: maxStreak, finishYear: finishYear, daysNoStitch: daysNoStitch };
     }
 
   // --- ADD PROJECT ---
