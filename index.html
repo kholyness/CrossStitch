@@ -838,7 +838,7 @@
   // =====================================================
   async function apiGet(params) {
     const url = GAS_URL + '?' + new URLSearchParams(params).toString();
-    const resp = await fetch(url);
+    const resp = await fetch(url, { cache: 'no-store' });
     return resp.json();
   }
 
@@ -1180,7 +1180,7 @@
 
     if (name === 'week') loadWeeklyStats();
     if (name === 'year') loadYearlyStats();
-    if (name === 'projects') renderManageProjects();
+    if (name === 'projects') loadProjects().then(() => renderManageProjects());
   }
 
   // =====================================================
