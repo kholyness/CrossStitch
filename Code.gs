@@ -202,6 +202,8 @@ function doGet(e) {
         const name = row[1].toString().trim();
         return {
           name: name,
+          designer: row[2] ? row[2].toString().trim() : "",
+          totalStitches: parseFloat(row[7]) || 0,
           progress: parseFloat(row[10]) || 0,
           weeklyNorm: parseFloat(row[14]) || 0,
           leftWeek: parseFloat(row[15]) || 0,
@@ -345,6 +347,8 @@ function doGet(e) {
   // --- ADD PROJECT ---
   } else if (action === 'addProject') {
     const name = (e.parameter.name || '').trim();
+    const designer = (e.parameter.designer || '').trim();
+    const totalStitches = parseFloat(e.parameter.totalStitches || '') || 0;
     const finishDateStr = (e.parameter.finishDate || '').trim(); // "YYYY-MM-DD"
 
     if (!name) {
@@ -376,8 +380,11 @@ function doGet(e) {
           } else {
             finishDate = new Date(2099, 11, 31);
           }
-          projectSheet.getRange(emptyRow, 2).setValue(name);   // Столбец B — название
-          projectSheet.getRange(emptyRow, 6).setValue(finishDate); // Столбец F — дата завершения
+          projectSheet.getRange(emptyRow, 2).setValue(name);        // B — название
+          if (designer) projectSheet.getRange(emptyRow, 3).setValue(designer);   // C — дизайнер
+          projectSheet.getRange(emptyRow, 5).setValue(today);        // E — дата начала (сегодня)
+          projectSheet.getRange(emptyRow, 6).setValue(finishDate);   // F — дата завершения
+          if (totalStitches > 0) projectSheet.getRange(emptyRow, 8).setValue(totalStitches); // H — общее кол-во крестиков
           SpreadsheetApp.flush();
           // Читаем рассчитанную норму из формулы
           const weeklyNorm = parseFloat(projectSheet.getRange(emptyRow, 15).getValue()) || 0;
@@ -390,6 +397,8 @@ function doGet(e) {
   } else if (action === 'updateProject') {
     const originalName = (e.parameter.originalName || '').trim();
     const name = (e.parameter.name || '').trim();
+    const designer = (e.parameter.designer || '').trim();
+    const totalStitches = parseFloat(e.parameter.totalStitches || '') || 0;
     const finishDateStr = (e.parameter.finishDate || '').trim(); // "YYYY-MM-DD"
 
     if (!originalName || !name) {
@@ -406,11 +415,13 @@ function doGet(e) {
       if (targetRow === -1) {
         result = { error: 'Проект не найден' };
       } else {
-        projectSheet.getRange(targetRow, 2).setValue(name);
+        projectSheet.getRange(targetRow, 2).setValue(name);          // B — название
+        projectSheet.getRange(targetRow, 3).setValue(designer);      // C — дизайнер
+        if (totalStitches > 0) projectSheet.getRange(targetRow, 8).setValue(totalStitches); // H — крестики
         if (finishDateStr) {
           const parts = finishDateStr.split('-');
           const finishDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-          projectSheet.getRange(targetRow, 6).setValue(finishDate); // Столбец F — дата завершения
+          projectSheet.getRange(targetRow, 6).setValue(finishDate);  // F — дата завершения
         }
         SpreadsheetApp.flush();
         // Читаем рассчитанную норму из формулы

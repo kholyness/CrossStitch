@@ -745,7 +745,15 @@
       <input class="form-input" type="text" id="formName" placeholder="Моя вышивка" maxlength="80" autocomplete="off" />
     </div>
     <div class="form-field">
-      <label class="form-label" for="formFinishDate">Желаемая дата завершения</label>
+      <label class="form-label" for="formDesigner">Дизайнер / Схема <span style="color:var(--text2);font-weight:400">(необязательно)</span></label>
+      <input class="form-input" type="text" id="formDesigner" placeholder="Например, Dimensions" maxlength="100" autocomplete="off" />
+    </div>
+    <div class="form-field">
+      <label class="form-label" for="formTotalStitches">Крестики (общее количество) <span style="color:var(--text2);font-weight:400">(необязательно)</span></label>
+      <input class="form-input" type="number" id="formTotalStitches" placeholder="0" min="0" inputmode="numeric" />
+    </div>
+    <div class="form-field">
+      <label class="form-label" for="formFinishDate">Желаемая дата завершения <span style="color:var(--text2);font-weight:400">(необязательно)</span></label>
       <input class="form-input" type="date" id="formFinishDate" />
       <div class="form-hint">Норма рассчитывается автоматически по формуле в таблице</div>
     </div>
@@ -1236,6 +1244,8 @@
     editingProject = projectName ? projects.find(p => p.name === projectName) : null;
     document.getElementById('formModalTitle').textContent = editingProject ? 'Изменить проект' : 'Новый проект';
     document.getElementById('formName').value = editingProject ? editingProject.name : '';
+    document.getElementById('formDesigner').value = editingProject ? (editingProject.designer || '') : '';
+    document.getElementById('formTotalStitches').value = editingProject ? (editingProject.totalStitches || '') : '';
     document.getElementById('formFinishDate').value = editingProject ? formatDateForInput(editingProject.finishDate) : '';
     const preview = document.getElementById('formNormPreview');
     if (editingProject && editingProject.weeklyNorm > 0) {
@@ -1260,6 +1270,8 @@
 
   async function submitProjectForm() {
     const name = document.getElementById('formName').value.trim();
+    const designer = document.getElementById('formDesigner').value.trim();
+    const totalStitches = document.getElementById('formTotalStitches').value.trim();
     const finishDate = document.getElementById('formFinishDate').value; // "YYYY-MM-DD" or ""
 
     if (!name) { showToast('Введи название проекта'); return; }
@@ -1271,9 +1283,9 @@
     try {
       let params;
       if (editingProject) {
-        params = { action: 'updateProject', originalName: editingProject.name, name, finishDate };
+        params = { action: 'updateProject', originalName: editingProject.name, name, designer, totalStitches, finishDate };
       } else {
-        params = { action: 'addProject', name, finishDate };
+        params = { action: 'addProject', name, designer, totalStitches, finishDate };
       }
 
       const data = await apiGet(params);
