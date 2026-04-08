@@ -337,6 +337,69 @@ function doGet(e) {
       result = { months: months, year: year, totalYear: totalYear };
     }
 
+  // --- ADD PROJECT ---
+  } else if (action === 'addProject') {
+    const name = (e.parameter.name || '').trim();
+    const weeklyNorm = parseFloat((e.parameter.weeklyNorm || '0').replace(',', '.')) || 0;
+
+    if (!name) {
+      result = { error: 'Название не указано' };
+    } else {
+      const colB = projectSheet.getRange("B2:B50").getValues();
+      // Проверяем нет ли уже такого проекта
+      for (let i = 0; i < colB.length; i++) {
+        if (colB[i][0] && colB[i][0].toString().trim().toLowerCase() === name.toLowerCase()) {
+          result = { error: 'Проект с таким названием уже существует' };
+          break;
+        }
+      }
+      if (!result) {
+        let emptyRow = -1;
+        for (let i = 0; i < colB.length; i++) {
+          if (!colB[i][0] || colB[i][0].toString().trim() === '') {
+            emptyRow = i + 2;
+            break;
+          }
+        }
+        if (emptyRow === -1) {
+          result = { error: 'Нет свободных строк в таблице (максимум 49 проектов)' };
+        } else {
+          projectSheet.getRange(emptyRow, 2).setValue(name);           // Столбец B — название
+          projectSheet.getRange(emptyRow, 15).setValue(weeklyNorm);    // Столбец O — норма в неделю
+          projectSheet.getRange(emptyRow, 6).setValue(new Date(2099, 11, 31)); // Столбец F — дата завершения
+          SpreadsheetApp.flush();
+          result = { success: true };
+        }
+      }
+    }
+
+  // --- UPDATE PROJECT ---
+  } else if (action === 'updateProject') {
+    const originalName = (e.parameter.originalName || '').trim();
+    const name = (e.parameter.name || '').trim();
+    const weeklyNorm = parseFloat((e.parameter.weeklyNorm || '0').replace(',', '.')) || 0;
+
+    if (!originalName || !name) {
+      result = { error: 'Параметры не указаны' };
+    } else {
+      const colB = projectSheet.getRange("B2:B50").getValues();
+      let targetRow = -1;
+      for (let i = 0; i < colB.length; i++) {
+        if (colB[i][0] && colB[i][0].toString().trim().toLowerCase() === originalName.toLowerCase()) {
+          targetRow = i + 2;
+          break;
+        }
+      }
+      if (targetRow === -1) {
+        result = { error: 'Проект не найден' };
+      } else {
+        projectSheet.getRange(targetRow, 2).setValue(name);
+        projectSheet.getRange(targetRow, 15).setValue(weeklyNorm);
+        SpreadsheetApp.flush();
+        result = { success: true };
+      }
+    }
+
   } else {
     result = { error: 'Неизвестный action' };
   }

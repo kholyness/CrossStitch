@@ -404,6 +404,113 @@
     }
     .month-count.zero { color: var(--text2); font-weight: 400; }
 
+    /* ---- MANAGE PROJECTS PAGE ---- */
+    .add-project-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      background: color-mix(in srgb, var(--accent) 70%, var(--surface));
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      padding: 13px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 14px;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .add-project-btn:active { opacity: 0.85; transform: scale(0.98); }
+
+    .manage-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      box-shadow: var(--shadow);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .manage-card-info { flex: 1; min-width: 0; }
+    .manage-card-name { font-weight: 700; font-size: 14px; color: var(--text); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .manage-card-norm { font-size: 12px; color: var(--text2); }
+    .edit-btn {
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: opacity 0.15s;
+    }
+    .edit-btn:active { opacity: 0.7; }
+
+    /* ---- PROJECT FORM MODAL ---- */
+    .form-modal {
+      background: var(--surface);
+      border-radius: 24px 24px 0 0;
+      padding: 24px 20px 40px;
+      width: 100%;
+      max-width: 500px;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .modal-overlay.show .form-modal { transform: translateY(0); }
+    .form-modal-title { font-size: 20px; font-weight: 800; margin-bottom: 20px; }
+    .form-field { margin-bottom: 16px; }
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text2);
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 11px 14px;
+      font-size: 16px;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus { border-color: var(--accent); }
+    .form-hint { font-size: 11px; color: var(--text2); margin-top: 4px; }
+    .form-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .form-submit {
+      flex: 1;
+      background: color-mix(in srgb, var(--accent) 70%, var(--surface));
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .form-submit:disabled { opacity: 0.5; cursor: default; }
+    .form-cancel {
+      background: var(--surface2);
+      color: var(--text2);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
     /* ---- LOADER ---- */
     .loader {
       text-align: center;
@@ -534,6 +641,10 @@
     <span class="nav-icon">📅</span>
     Год
   </div>
+  <div class="nav-item" id="nav-projects" onclick="switchPage('projects')">
+    <span class="nav-icon">🗂️</span>
+    Проекты
+  </div>
 </nav>
 
 <!-- PAGE: TODAY -->
@@ -559,6 +670,35 @@
   </div>
 </div>
 
+<!-- PAGE: PROJECTS -->
+<div class="page" id="page-projects">
+  <button class="add-project-btn" onclick="openProjectForm(null)">+ Добавить проект</button>
+  <div class="section-title">Активные проекты</div>
+  <div id="manageProjectList">
+    <div class="loader"><div class="spinner"></div>Загружаем…</div>
+  </div>
+</div>
+
+<!-- PROJECT FORM MODAL -->
+<div class="modal-overlay" id="projectFormModal" onclick="closeProjectForm(event)">
+  <div class="form-modal">
+    <div class="form-modal-title" id="formModalTitle">Новый проект</div>
+    <div class="form-field">
+      <label class="form-label" for="formName">Название</label>
+      <input class="form-input" type="text" id="formName" placeholder="Моя вышивка" maxlength="80" autocomplete="off" />
+    </div>
+    <div class="form-field">
+      <label class="form-label" for="formNorm">Норма на неделю (крестики)</label>
+      <input class="form-input" type="number" id="formNorm" placeholder="0" min="0" inputmode="numeric" />
+      <div class="form-hint">0 — без нормы</div>
+    </div>
+    <div class="form-actions">
+      <button class="form-cancel" onclick="closeProjectFormModal()">Отмена</button>
+      <button class="form-submit" id="formSubmitBtn" onclick="submitProjectForm()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
 <!-- FORTUNE MODAL -->
 <div class="modal-overlay" id="fortuneModal" onclick="closeFortune(event)">
   <div class="modal">
@@ -579,7 +719,7 @@
   // =====================================================
   // НАСТРОЙКА — замени на свой URL
   // =====================================================
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbzIVnBMOjaaNoEaR-M68ABTZOJd2GdBrZzepWwAg5lJsEAQt-Jc5J74HdToEzfAZg4N/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbwdFV_xA__fKfNcnhvR-bVsJ8d7L4B2auqHosnV6i4auHEV0c9Y9RG4QnVdSz226Q2z/exec";
 
   // =====================================================
   // Telegram WebApp init
@@ -944,6 +1084,7 @@
 
     if (name === 'week') loadWeeklyStats();
     if (name === 'year') loadYearlyStats();
+    if (name === 'projects') renderManageProjects();
   }
 
   // =====================================================
@@ -966,6 +1107,85 @@
   }
   function escapeJs(s) {
     return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  }
+
+  // =====================================================
+  // Projects management
+  // =====================================================
+  let editingProject = null; // null = add new, otherwise project object
+
+  function renderManageProjects() {
+    const list = document.getElementById('manageProjectList');
+    if (!projects.length) {
+      list.innerHTML = '<div class="no-data"><span class="no-data-emoji">🗂️</span>Нет активных проектов.</div>';
+      return;
+    }
+    list.innerHTML = projects.map(p => `
+      <div class="manage-card">
+        <div class="manage-card-info">
+          <div class="manage-card-name">${escapeHtml(p.name)}</div>
+          <div class="manage-card-norm">${p.weeklyNorm > 0 ? 'Норма: ' + p.weeklyNorm + ' кр./нед.' : 'Без нормы'}</div>
+        </div>
+        <button class="edit-btn" onclick="openProjectForm('${escapeJs(p.name)}')">Изменить</button>
+      </div>`).join('');
+  }
+
+  function openProjectForm(projectName) {
+    editingProject = projectName ? projects.find(p => p.name === projectName) : null;
+    document.getElementById('formModalTitle').textContent = editingProject ? 'Изменить проект' : 'Новый проект';
+    document.getElementById('formName').value = editingProject ? editingProject.name : '';
+    document.getElementById('formNorm').value = editingProject ? (editingProject.weeklyNorm || '') : '';
+    document.getElementById('formSubmitBtn').disabled = false;
+    document.getElementById('formSubmitBtn').textContent = 'Сохранить';
+    document.getElementById('projectFormModal').classList.add('show');
+    setTimeout(() => document.getElementById('formName').focus(), 350);
+  }
+
+  function closeProjectFormModal() {
+    document.getElementById('projectFormModal').classList.remove('show');
+  }
+
+  function closeProjectForm(e) {
+    if (e.target === document.getElementById('projectFormModal')) closeProjectFormModal();
+  }
+
+  async function submitProjectForm() {
+    const name = document.getElementById('formName').value.trim();
+    const norm = parseInt(document.getElementById('formNorm').value) || 0;
+
+    if (!name) { showToast('Введи название проекта'); return; }
+
+    const btn = document.getElementById('formSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Сохраняем…';
+
+    try {
+      let params;
+      if (editingProject) {
+        params = { action: 'updateProject', originalName: editingProject.name, name, weeklyNorm: norm };
+      } else {
+        params = { action: 'addProject', name, weeklyNorm: norm };
+      }
+
+      const data = await apiGet(params);
+      if (data.success) {
+        closeProjectFormModal();
+        showToast(editingProject ? '✅ Проект обновлён!' : '✅ Проект добавлен!');
+        // Перезагружаем список проектов
+        const freshData = await apiGet({ action: 'getProjects' });
+        projects = freshData.projects || [];
+        renderManageProjects();
+        renderTodayProjects();
+      } else {
+        showToast(data.error || 'Ошибка сохранения');
+        btn.disabled = false;
+        btn.textContent = 'Сохранить';
+      }
+    } catch (err) {
+      showToast('Ошибка сети 😢');
+      btn.disabled = false;
+      btn.textContent = 'Сохранить';
+    }
   }
 
   // =====================================================
