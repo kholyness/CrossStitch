@@ -343,6 +343,63 @@
     }
     .no-data-emoji { font-size: 40px; display: block; margin-bottom: 10px; }
 
+    /* ---- WEEK DAY HISTOGRAM ---- */
+    .day-chart {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px 14px 10px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+    }
+    .day-chart-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    .day-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 5px;
+      height: 72px;
+    }
+    .day-bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .day-bar-count {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 3px;
+      min-height: 12px;
+      line-height: 12px;
+    }
+    .day-bar-count.zero { color: transparent; }
+    .day-bar {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      background: linear-gradient(180deg, var(--accent), var(--accent2));
+      transition: height 0.5s ease;
+    }
+    .day-bar.today-bar {
+      background: linear-gradient(180deg, var(--green), #8bc99e);
+    }
+    .day-bar.empty-bar { background: var(--border); }
+    .day-bar-name {
+      font-size: 11px;
+      color: var(--text2);
+      margin-top: 5px;
+      font-weight: 500;
+    }
+    .day-bar-name.today-name { color: var(--accent); font-weight: 700; }
+
     /* ---- YEARLY STATS ---- */
     .year-header {
       background: var(--surface);
@@ -719,7 +776,7 @@
   // =====================================================
   // НАСТРОЙКА — замени на свой URL
   // =====================================================
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbwdFV_xA__fKfNcnhvR-bVsJ8d7L4B2auqHosnV6i4auHEV0c9Y9RG4QnVdSz226Q2z/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbwx4mo2XgKN7rVoK82kmfezaERZRg477mDQGQk4A1N7FzEimGR2vqE-IKRr28uBY3MI/exec";
 
   // =====================================================
   // Telegram WebApp init
@@ -902,10 +959,35 @@
       ${rowsHTML}`;
   }
 
+  function renderDayChart(dayTotals) {
+    const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    const jsDay = new Date().getDay(); // 0=Sun
+    const todayIdx = jsDay === 0 ? 6 : jsDay - 1; // 0=Пн..6=Вс
+    const maxVal = Math.max(...dayTotals, 1);
+
+    const barsHTML = dayTotals.map((val, i) => {
+      const isToday = i === todayIdx;
+      const isEmpty = val === 0;
+      const heightPct = isEmpty ? 4 : Math.max(4, Math.round((val / maxVal) * 100));
+      return `
+        <div class="day-bar-col">
+          <div class="day-bar-count${isEmpty ? ' zero' : ''}">${isEmpty ? '0' : val}</div>
+          <div class="day-bar${isToday ? ' today-bar' : isEmpty ? ' empty-bar' : ''}" style="height:${heightPct}%"></div>
+          <div class="day-bar-name${isToday ? ' today-name' : ''}">${dayNames[i]}</div>
+        </div>`;
+    }).join('');
+
+    return `<div class="day-chart">
+      <div class="day-chart-label">По дням недели</div>
+      <div class="day-bars">${barsHTML}</div>
+    </div>`;
+  }
+
   function renderWeeklyStats(data) {
     const el = document.getElementById('weekContent');
     const stats = data.stats || {};
     const keys = Object.keys(stats);
+    const dayTotals = data.dayTotals || new Array(7).fill(0);
 
     if (!keys.length) {
       el.innerHTML = `
@@ -914,6 +996,7 @@
           <div class="week-total">0</div>
           <div class="week-total-label">крестиков за неделю</div>
         </div>
+        ${renderDayChart(dayTotals)}
         <div class="no-data"><span class="no-data-emoji">🪡</span>Записей за эту неделю пока нет.</div>`;
       return;
     }
@@ -945,6 +1028,7 @@
         <div class="week-total">${data.totalSum}</div>
         <div class="week-total-label">крестиков за неделю</div>
       </div>
+      ${renderDayChart(dayTotals)}
       ${itemsHTML}`;
   }
 

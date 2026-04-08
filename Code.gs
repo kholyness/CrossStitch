@@ -230,6 +230,7 @@ function doGet(e) {
       const logData = logSheet.getRange("A2:C" + lastRow).getValues();
       let stats = {};
       let totalSum = 0;
+      const dayTotals = new Array(7).fill(0); // 0=Пн, ..., 6=Вс
 
       for (let i = 0; i < logData.length; i++) {
         let cellDateRaw = logData[i][0];
@@ -248,6 +249,10 @@ function doGet(e) {
           if (proj) {
             stats[proj] = (stats[proj] || 0) + count;
             totalSum += count;
+            // getDay(): 0=Вс, 1=Пн, ..., 6=Сб → переводим в 0=Пн..6=Вс
+            let jsDay = entryDate.getDay();
+            let dayIdx = jsDay === 0 ? 6 : jsDay - 1;
+            dayTotals[dayIdx] += count;
           }
         }
       }
@@ -266,7 +271,7 @@ function doGet(e) {
       }
 
       let dateRange = Utilities.formatDate(startMonday, "GMT+1", "dd.MM") + " – " + Utilities.formatDate(endSunday, "GMT+1", "dd.MM");
-      result = { stats: statsWithNorm, totalSum: totalSum, dateRange: dateRange };
+      result = { stats: statsWithNorm, totalSum: totalSum, dateRange: dateRange, dayTotals: dayTotals };
     }
 
   // --- LOG STITCHES ---
@@ -395,6 +400,75 @@ function doGet(e) {
       } else {
         projectSheet.getRange(targetRow, 2).setValue(name);
         projectSheet.getRange(targetRow, 15).setValue(weeklyNorm);
+        SpreadsheetApp.flush();
+        result = { success: true };
+      }
+    }
+
+  // --- GET RECENT LOG ---
+  } else if (action === 'getRecentLog') {
+    let startMonday = new Date(today);
+    let day = today.getDay();
+    let diff = (day === 0 ? -6 : 1 - day);
+    startMonday.setDate(today.getDate() + diff);
+    startMonday.setHours(0, 0, 0, 0);
+
+    const lastRow = logSheet.getLastRow();
+    if (lastRow < 2) {
+      result = { entries: [] };
+    } else {
+      const logData = logSheet.getRange("A2:C" + lastRow).getValues();
+      let entries = [];
+      for (let i = 0; i < logData.length; i++) {
+        let cellDateRaw = logData[i][0];
+        if (!cellDateRaw) continue;
+        let entryDate;
+        if (cellDateRaw instanceof Date) {
+          entryDate = cellDateRaw;
+        } else {
+          let parts = cellDateRaw.toString().split('.');
+          if (parts.length < 3) continue;
+          entryDate = new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+        if (entryDate >= startMonday) {
+          let dateStr = logData[i][0] instanceof Date
+            ? Utilities.formatDate(logData[i][0], 'GMT+1', 'dd.MM.yyyy')
+            : logData[i][0].toString();
+          let proj = logData[i][1] ? logData[i][1].toString().trim() : '';
+          if (proj) {
+            entries.push({ date: dateStr, project: proj, count: parseFloat(logData[i][2]) || 0 });
+          }
+        }
+      }
+      entries.sort((a, b) => {
+        let [da, ma, ya] = a.date.split('.').map(Number);
+        let [db, mb, yb] = b.date.split('.').map(Number);
+        return new Date(yb, mb - 1, db) - new Date(ya, ma - 1, da);
+      });
+      result = { entries: entries };
+    }
+
+  // --- EDIT LOG ENTRY ---
+  } else if (action === 'editLogEntry') {
+    const date = (e.parameter.date || '').trim();
+    const project = (e.parameter.project || '').trim();
+    const count = parseFloat((e.parameter.count || '0').replace(',', '.'));
+
+    if (!date || !project || isNaN(count) || count < 0) {
+      result = { error: 'Неверные параметры' };
+    } else {
+      const logData = logSheet.getRange('A:C').getDisplayValues();
+      let rowIndex = -1;
+      for (let i = 0; i < logData.length; i++) {
+        if (logData[i][0] === date && logData[i][1].toLowerCase() === project.toLowerCase()) {
+          rowIndex = i + 1;
+          break;
+        }
+      }
+      if (rowIndex === -1) {
+        result = { error: 'Запись не найдена' };
+      } else {
+        logSheet.getRange(rowIndex, 3).setValue(count);
         SpreadsheetApp.flush();
         result = { success: true };
       }
