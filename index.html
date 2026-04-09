@@ -965,6 +965,7 @@
       projects = cached.projects || [];
       updateProjectCounts(cached);
       renderTodayProjects();
+      renderManageProjects();
     }
     try {
       const data = await apiGet({ action: 'getProjects' });
@@ -972,6 +973,7 @@
       projects = data.projects || [];
       updateProjectCounts(data);
       renderTodayProjects();
+      renderManageProjects();
     } catch (err) {
       if (!cached) {
         document.getElementById('todayProjectList').innerHTML =
@@ -1377,7 +1379,7 @@
 
     if (name === 'week') loadWeeklyStats();
     if (name === 'year') loadYearlyStats();
-    if (name === 'projects') loadProjects().then(() => renderManageProjects());
+    if (name === 'projects') loadProjects();
   }
 
   // =====================================================
