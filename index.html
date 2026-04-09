@@ -1302,8 +1302,8 @@
       });
 
       if (data.success) {
-        cacheInvalidate('getProjects', 'getWeeklyStats', 'getYearlyStats');
-        // Update local state
+        cacheInvalidate('getWeeklyStats', 'getYearlyStats');
+        // Update local state immediately for instant UI feedback
         selectedProject.todayCount = count;
         selectedProject.leftWeek = data.leftWeek;
         selectedProject.progress = data.progress;
@@ -1317,6 +1317,8 @@
 
         showToast(msg);
         renderTodayProjects();
+        // Refresh projects cache in background so external changes are picked up
+        loadProjects();
       } else {
         showToast('Ошибка сохранения 😢');
       }
