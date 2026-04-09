@@ -275,8 +275,9 @@
       box-shadow: var(--shadow);
     }
     .stat-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+    .stat-bottom { display: flex; justify-content: space-between; align-items: baseline; }
     .stat-count { font-size: 14px; color: var(--text); }
-    .stat-norm { font-size: 14px; color: var(--text2); margin-top: 2px; }
+    .stat-norm { font-size: 14px; color: var(--text2); }
     .no-data {
       text-align: center;
       color: var(--text2);
@@ -1103,8 +1104,10 @@
         return `
           <div class="stat-item">
             <div class="stat-name">${escapeHtml(proj)}</div>
-            <div class="stat-count">Вышито ${s.done} кр.</div>
-            ${s.norm > 0 ? `<div class="stat-norm">До нормы ${leftNorm} (${normPct}%)</div>` : ''}
+            <div class="stat-bottom">
+              <span class="stat-count">Вышито ${s.done} кр.</span>
+              ${s.norm > 0 ? `<span class="stat-norm">До нормы ${leftNorm} (${normPct}%)</span>` : ''}
+            </div>
           </div>`;
       }).join('');
 
