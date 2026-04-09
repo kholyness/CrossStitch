@@ -861,7 +861,7 @@
   // =====================================================
   // НАСТРОЙКА — замени на свой URL
   // =====================================================
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbxUksho1xYcbfznkVoiGUCBps5zAD6bpmr6zNVJHbqbdoZqtujqKHLXT3BxZTLPtqaX/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbwrstN1Kw0mOWkccqCAX4dO8REnDRdQJDonLJPkehD1NRHjTUEN8avpbbqQrMu5iPDB/exec";
 
   // =====================================================
   // Telegram WebApp init
@@ -925,7 +925,8 @@
   // API calls
   // =====================================================
   async function apiGet(params) {
-    const url = GAS_URL + '?' + new URLSearchParams(params).toString();
+    const initData = window.Telegram?.WebApp?.initData || '';
+    const url = GAS_URL + '?' + new URLSearchParams({ ...params, initData }).toString();
     const resp = await fetch(url, { cache: 'no-store' });
     return resp.json();
   }

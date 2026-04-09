@@ -153,9 +153,52 @@ function doPost(e) {
 }
 
 // =====================================================
+// Проверка подписи Telegram initData
+// =====================================================
+function verifyInitData(initData) {
+  if (!initData) return false;
+
+  const parts = initData.split('&');
+  const data = {};
+  let hash = '';
+
+  for (const part of parts) {
+    const eqIdx = part.indexOf('=');
+    const key = part.slice(0, eqIdx);
+    const value = decodeURIComponent(part.slice(eqIdx + 1));
+    if (key === 'hash') hash = value;
+    else data[key] = value;
+  }
+
+  const checkString = Object.keys(data).sort().map(k => k + '=' + data[k]).join('\n');
+
+  const secretKey = Utilities.computeHmacSignature(
+    Utilities.MacAlgorithm.HMAC_SHA256,
+    TOKEN,
+    'WebAppData'
+  );
+  const expected = Utilities.computeHmacSignature(
+    Utilities.MacAlgorithm.HMAC_SHA256,
+    checkString,
+    secretKey
+  );
+  const expectedHex = expected.map(function(b) {
+    return ('0' + (b & 0xFF).toString(16)).slice(-2);
+  }).join('');
+
+  return expectedHex === hash;
+}
+
+// =====================================================
 // Mini App API — обрабатывает запросы от веб-приложения
 // =====================================================
 function doGet(e) {
+  if (!verifyInitData(e.parameter.initData || '')) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ error: 'Unauthorized' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   const action = e.parameter.action || '';
 
   const ss = SpreadsheetApp.openById(SHEET_ID);
