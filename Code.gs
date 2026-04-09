@@ -202,7 +202,30 @@ function doGet(e) {
         };
       });
 
-    result = { projects: projects, todayStr: todayStr };
+    const inactiveProjects = fullRange
+      .filter(row => {
+        let name = row[1] ? row[1].toString().trim() : "";
+        let finishDate = row[5];
+        let progress = parseFloat(row[10]);
+        return name !== "" && (finishDate === "" || finishDate == null) && (isNaN(progress) || progress < 1);
+      })
+      .map(row => {
+        const name = row[1].toString().trim();
+        return {
+          name: name,
+          designer: row[2] ? row[2].toString().trim() : "",
+          totalStitches: parseFloat(row[7]) || 0,
+          progress: parseFloat(row[10]) || 0,
+          weeklyNorm: 0,
+          leftWeek: 0,
+          finishDate: "",
+          todayCount: todayLog[name] || 0,
+          totalRemaining: parseFloat(row[9]) || 0,
+          inactive: true
+        };
+      });
+
+    result = { projects: [...projects, ...inactiveProjects], todayStr: todayStr };
 
   // --- GET WEEKLY STATS ---
   } else if (action === 'getWeeklyStats') {
