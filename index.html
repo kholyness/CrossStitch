@@ -899,8 +899,13 @@
   }
 
   async function loadDaysNoStitch() {
+    const cached = cacheGet('getYearlyStats');
+    if (cached?.daysNoStitch != null) {
+      document.getElementById('headerDaysNoStitch').textContent = cached.daysNoStitch;
+    }
     try {
       const data = await apiGet({ action: 'getYearlyStats' });
+      cacheSet('getYearlyStats', data);
       if (data.daysNoStitch != null) {
         document.getElementById('headerDaysNoStitch').textContent = data.daysNoStitch;
       }
@@ -924,6 +929,29 @@
     return resp.json();
   }
 
+  // =====================================================
+  // Cache (localStorage, TTL 15 min)
+  // =====================================================
+  const CACHE_TTL = 15 * 60 * 1000;
+
+  function cacheGet(key) {
+    try {
+      const raw = localStorage.getItem('cs_' + key);
+      if (!raw) return null;
+      const { data, ts } = JSON.parse(raw);
+      if (Date.now() - ts > CACHE_TTL) { localStorage.removeItem('cs_' + key); return null; }
+      return data;
+    } catch (e) { return null; }
+  }
+
+  function cacheSet(key, data) {
+    try { localStorage.setItem('cs_' + key, JSON.stringify({ data, ts: Date.now() })); } catch (e) {}
+  }
+
+  function cacheInvalidate(...keys) {
+    keys.forEach(k => { try { localStorage.removeItem('cs_' + k); } catch (e) {} });
+  }
+
   function updateProjectCounts(data) {
     const sc = document.getElementById('startedCount');
     const fc = document.getElementById('finishedCount');
@@ -932,36 +960,57 @@
   }
 
   async function loadProjects() {
+    const cached = cacheGet('getProjects');
+    if (cached) {
+      projects = cached.projects || [];
+      updateProjectCounts(cached);
+      renderTodayProjects();
+    }
     try {
       const data = await apiGet({ action: 'getProjects' });
+      cacheSet('getProjects', data);
       projects = data.projects || [];
       updateProjectCounts(data);
       renderTodayProjects();
     } catch (err) {
-      document.getElementById('todayProjectList').innerHTML =
-        '<div class="no-data"><span class="no-data-emoji">⚠️</span>Ошибка загрузки.<br>Проверь URL в коде.</div>';
+      if (!cached) {
+        document.getElementById('todayProjectList').innerHTML =
+          '<div class="no-data"><span class="no-data-emoji">⚠️</span>Ошибка загрузки.<br>Проверь URL в коде.</div>';
+      }
     }
   }
 
   async function loadYearlyStats() {
     const el = document.getElementById('yearContent');
-    el.innerHTML = '<div class="loader"><div class="spinner"></div>Загружаем…</div>';
+    const cached = cacheGet('getYearlyStats');
+    if (cached) {
+      renderYearlyStats(cached);
+    } else {
+      el.innerHTML = '<div class="loader"><div class="spinner"></div>Загружаем…</div>';
+    }
     try {
       const data = await apiGet({ action: 'getYearlyStats' });
+      cacheSet('getYearlyStats', data);
       renderYearlyStats(data);
     } catch (err) {
-      el.innerHTML = '<div class="no-data"><span class="no-data-emoji">⚠️</span>Ошибка загрузки.</div>';
+      if (!cached) el.innerHTML = '<div class="no-data"><span class="no-data-emoji">⚠️</span>Ошибка загрузки.</div>';
     }
   }
 
   async function loadWeeklyStats() {
     const el = document.getElementById('weekContent');
-    el.innerHTML = '<div class="loader"><div class="spinner"></div>Загружаем…</div>';
+    const cached = cacheGet('getWeeklyStats');
+    if (cached) {
+      renderWeeklyStats(cached);
+    } else {
+      el.innerHTML = '<div class="loader"><div class="spinner"></div>Загружаем…</div>';
+    }
     try {
       const data = await apiGet({ action: 'getWeeklyStats' });
+      cacheSet('getWeeklyStats', data);
       renderWeeklyStats(data);
     } catch (err) {
-      el.innerHTML = '<div class="no-data"><span class="no-data-emoji">⚠️</span>Ошибка загрузки.</div>';
+      if (!cached) el.innerHTML = '<div class="no-data"><span class="no-data-emoji">⚠️</span>Ошибка загрузки.</div>';
     }
   }
 
@@ -1245,6 +1294,7 @@
       });
 
       if (data.success) {
+        cacheInvalidate('getProjects', 'getWeeklyStats', 'getYearlyStats');
         // Update local state
         selectedProject.todayCount = count;
         selectedProject.leftWeek = data.leftWeek;
@@ -1458,6 +1508,8 @@
       if (data.success) {
         showToast('🎉 Проект завершён!');
         const freshData = await apiGet({ action: 'getProjects' });
+        cacheSet('getProjects', freshData);
+        cacheInvalidate('getWeeklyStats', 'getYearlyStats');
         projects = freshData.projects || [];
         updateProjectCounts(freshData);
         renderManageProjects();
@@ -1497,6 +1549,7 @@
         showToast((editingProject ? '✅ Проект обновлён!' : '✅ Проект добавлен!') + normMsg);
         // Перезагружаем список проектов
         const freshData = await apiGet({ action: 'getProjects' });
+        cacheSet('getProjects', freshData);
         projects = freshData.projects || [];
         updateProjectCounts(freshData);
         renderManageProjects();
