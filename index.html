@@ -960,13 +960,14 @@
     if (fc) fc.textContent = data.finishedCount || '—';
   }
 
-  async function loadProjects() {
+  async function loadProjects(force = false) {
     const cached = cacheGet('getProjects');
     if (cached) {
       projects = cached.projects || [];
       updateProjectCounts(cached);
       renderTodayProjects();
       renderManageProjects();
+      if (!force) return;
     }
     try {
       const data = await apiGet({ action: 'getProjects' });
@@ -1318,7 +1319,7 @@
         showToast(msg);
         renderTodayProjects();
         // Refresh projects cache in background so external changes are picked up
-        loadProjects();
+        loadProjects(true);
       } else {
         showToast('Ошибка сохранения 😢');
       }
