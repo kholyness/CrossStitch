@@ -193,9 +193,16 @@ function verifyInitData(initData) {
 // Mini App API — обрабатывает запросы от веб-приложения
 // =====================================================
 function doGet(e) {
-  if (!verifyInitData(e.parameter.initData || '')) {
+  try {
+    if (!verifyInitData(e.parameter.initData || '')) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ error: 'Unauthorized' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch (authErr) {
+    Logger.log('verifyInitData error: ' + authErr);
     return ContentService
-      .createTextOutput(JSON.stringify({ error: 'Unauthorized' }))
+      .createTextOutput(JSON.stringify({ error: 'AuthError', detail: authErr.toString() }))
       .setMimeType(ContentService.MimeType.JSON);
   }
 
