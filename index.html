@@ -1067,7 +1067,7 @@
         <div class="input-label">Сколько крестиков сегодня?</div>
         <div class="counter-row">
           <button class="counter-btn btn-minus" onclick="changeCount(-1)">−</button>
-          <input type="number" class="counter-input" id="countInput" value="${val}" min="0" inputmode="numeric" />
+          <input type="number" class="counter-input" id="countInput" value="${val}" min="0" step="0.5" inputmode="decimal" />
           <button class="counter-btn btn-plus" onclick="changeCount(1)">+</button>
         </div>
         <button class="save-btn" id="saveBtn" onclick="saveStitches()">Сохранить</button>
@@ -1285,7 +1285,7 @@
   // =====================================================
   function changeCount(delta) {
     const input = document.getElementById('countInput');
-    const val = Math.max(0, (parseInt(input.value) || 0) + delta);
+    const val = Math.max(0, (parseFloat(input.value) || 0) + delta);
     input.value = val;
   }
 
@@ -1296,6 +1296,7 @@
     if (!selectedProject) return;
 
     const count = parseFloat(document.getElementById('countInput').value) || 0;
+    if (count <= 0) { showToast('Введи количество крестиков'); return; }
     const btn = document.getElementById('saveBtn');
     btn.disabled = true;
     btn.textContent = 'Сохраняем…';
