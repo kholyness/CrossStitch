@@ -963,7 +963,7 @@
 
   async function loadProjects(force = false) {
     const cached = cacheGet('getProjects');
-    if (cached) {
+    if (cached && !cached.error) {
       projects = cached.projects || [];
       updateProjectCounts(cached);
       renderTodayProjects();
@@ -974,8 +974,9 @@
       const data = await apiGet({ action: 'getProjects' });
       if (data.error) {
         showToast('Auth: ' + data.error + (data.reason ? ' / ' + data.reason : '') + (data.detail ? ' / ' + data.detail : ''));
+      } else {
+        cacheSet('getProjects', data);
       }
-      cacheSet('getProjects', data);
       projects = data.projects || [];
       updateProjectCounts(data);
       renderTodayProjects();
