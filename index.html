@@ -669,6 +669,68 @@
       font-size: 15px;
       cursor: pointer;
     }
+    /* ---- CONFIRM DIALOG ---- */
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 400;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      padding: 24px;
+    }
+    .confirm-overlay.show { opacity: 1; pointer-events: all; }
+    .confirm-dialog {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 28px 24px 20px;
+      width: 100%;
+      max-width: 340px;
+      transform: scale(0.93);
+      transition: transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1);
+    }
+    .confirm-overlay.show .confirm-dialog { transform: scale(1); }
+    .confirm-dialog-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--text);
+    }
+    .confirm-dialog-body {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .confirm-dialog-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .confirm-btn-cancel {
+      background: transparent;
+      border: 1.5px solid var(--border, rgba(255,255,255,0.12));
+      color: var(--text2);
+      border-radius: 12px;
+      padding: 10px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .confirm-btn-ok {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 24px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -778,6 +840,18 @@
     <button class="modal-btn" onclick="selectFortuneProject()">Выбрать этот проект</button>
     <button class="modal-btn-secondary" onclick="showFortune()">Крутить ещё раз</button>
     <button class="modal-btn-secondary" onclick="closeFortuneModal()">Отмена</button>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="confirm-overlay" id="confirmDialog">
+  <div class="confirm-dialog">
+    <div class="confirm-dialog-title" id="confirmTitle"></div>
+    <div class="confirm-dialog-body" id="confirmBody"></div>
+    <div class="confirm-dialog-actions">
+      <button class="confirm-btn-cancel" id="confirmCancel">Отмена</button>
+      <button class="confirm-btn-ok" id="confirmOk">OK</button>
+    </div>
   </div>
 </div>
 
@@ -1193,6 +1267,25 @@
     document.getElementById('fortuneModal').classList.remove('show');
   }
 
+  function showConfirm(title, body) {
+    return new Promise(resolve => {
+      const overlay = document.getElementById('confirmDialog');
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmBody').textContent = body;
+      overlay.classList.add('show');
+      function finish(result) {
+        overlay.classList.remove('show');
+        document.getElementById('confirmOk').onclick = null;
+        document.getElementById('confirmCancel').onclick = null;
+        overlay.onclick = null;
+        resolve(result);
+      }
+      document.getElementById('confirmOk').onclick = () => finish(true);
+      document.getElementById('confirmCancel').onclick = () => finish(false);
+      overlay.onclick = e => { if (e.target === overlay) finish(false); };
+    });
+  }
+
   function closeFortune(e) {
     if (e.target === document.getElementById('fortuneModal')) closeFortuneModal();
   }
@@ -1306,7 +1399,11 @@
       showToast('Проект уже на 100%!');
       return;
     }
-    if (!confirm(`Завершить "${name}"?\n\nОставшиеся ${project.totalRemaining} кр. будут записаны сегодня, прогресс станет 100%.`)) return;
+    const confirmed = await showConfirm(
+      `Завершить «${name}»?`,
+      `Оставшиеся ${project.totalRemaining} кр. будут записаны сегодня, прогресс станет 100%.`
+    );
+    if (!confirmed) return;
     try {
       const data = await apiGet({ action: 'finishProject', name });
       if (data.success) {
