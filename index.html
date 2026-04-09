@@ -278,6 +278,7 @@
     .stat-bottom { display: flex; justify-content: space-between; align-items: baseline; }
     .stat-count { font-size: 14px; color: var(--text); }
     .stat-norm { font-size: 14px; color: var(--text2); }
+    .stat-norm--over { color: #4caf50; }
     .no-data {
       text-align: center;
       color: var(--text2);
@@ -1205,14 +1206,19 @@
       .map(proj => {
         const s = stats[proj];
         const barPct = maxDone > 0 ? Math.round((s.done / maxDone) * 100) : 0;
-        const normPct = s.norm > 0 ? Math.min(100, Math.round((s.done / s.norm) * 100)) : null;
         const leftNorm = s.norm > 0 ? s.norm - s.done : 0;
+        const normPct = s.norm > 0 ? Math.round((s.done / s.norm) * 100) : null;
+        const normLabel = s.norm > 0
+          ? (leftNorm <= 0
+            ? `<span class="stat-norm stat-norm--over">Перевыполнено на ${normPct - 100}%</span>`
+            : `<span class="stat-norm">До нормы ${leftNorm} (${normPct}%)</span>`)
+          : '';
         return `
           <div class="stat-item">
             <div class="stat-name">${escapeHtml(proj)}</div>
             <div class="stat-bottom">
               <span class="stat-count">Вышито ${s.done} кр.</span>
-              ${s.norm > 0 ? `<span class="stat-norm">До нормы ${leftNorm} (${normPct}%)</span>` : ''}
+              ${normLabel}
             </div>
           </div>`;
       }).join('');
