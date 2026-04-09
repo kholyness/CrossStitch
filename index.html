@@ -1332,8 +1332,9 @@
   // Fortune
   // =====================================================
   function showFortune() {
-    if (!projects.length) { showToast('Нет активных проектов!'); return; }
-    const p = projects[Math.floor(Math.random() * projects.length)];
+    const activeProjects = projects.filter(p => !p.inactive);
+    if (!activeProjects.length) { showToast('Нет активных проектов!'); return; }
+    const p = activeProjects[Math.floor(Math.random() * activeProjects.length)];
     fortuneSelected = p;
     document.getElementById('fortuneProject').textContent = p.name;
     document.getElementById('fortuneModal').classList.add('show');
