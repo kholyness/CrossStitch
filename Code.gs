@@ -176,12 +176,12 @@ function verifyInitData(initData) {
   const checkString = Object.keys(data).sort().map(function(k) { return k + '=' + data[k]; }).join('\n');
 
   const secretKey = Utilities.computeHmacSignature(
-    Utilities.MacAlgorithm.HMAC_SHA256,
+    Utilities.MacAlgorithm.HMAC_SHA_256,
     TOKEN,
     'WebAppData'
   );
   const expected = Utilities.computeHmacSignature(
-    Utilities.MacAlgorithm.HMAC_SHA256,
+    Utilities.MacAlgorithm.HMAC_SHA_256,
     checkString,
     secretKey
   );
