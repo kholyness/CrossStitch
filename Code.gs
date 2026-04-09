@@ -225,7 +225,10 @@ function doGet(e) {
         };
       });
 
-    result = { projects: [...projects, ...inactiveProjects], todayStr: todayStr };
+    const statSheet = ss.getSheetByName("Статистика");
+    const startedCount = statSheet ? statSheet.getRange("F18").getDisplayValue() : '';
+    const finishedCount = statSheet ? statSheet.getRange("F19").getDisplayValue() : '';
+    result = { projects: [...projects, ...inactiveProjects], todayStr: todayStr, startedCount: startedCount, finishedCount: finishedCount };
 
   // --- GET WEEKLY STATS ---
   } else if (action === 'getWeeklyStats') {

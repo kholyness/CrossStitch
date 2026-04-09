@@ -432,24 +432,43 @@
     }
 
     /* ---- MANAGE PROJECTS PAGE ---- */
+    .projects-top-row {
+      display: flex;
+      align-items: stretch;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
     .add-project-btn {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      width: 100%;
+      gap: 6px;
+      flex: 1;
       background: color-mix(in srgb, var(--accent) 70%, var(--surface));
       color: white;
       border: none;
       border-radius: var(--radius);
-      padding: 13px;
-      font-size: 15px;
+      padding: 10px 12px;
+      font-size: 13px;
       font-weight: 700;
       cursor: pointer;
-      margin-bottom: 14px;
       transition: opacity 0.15s, transform 0.1s;
     }
     .add-project-btn:active { opacity: 0.85; transform: scale(0.98); }
+    .proj-counts {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 3px;
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+    .proj-counts span {
+      font-weight: 700;
+      color: var(--accent);
+    }
 
     .manage-card {
       background: var(--surface);
@@ -764,7 +783,13 @@
 
 <!-- PAGE: PROJECTS -->
 <div class="page" id="page-projects">
-  <button class="add-project-btn" onclick="openProjectForm(null)">+ Добавить проект</button>
+  <div class="projects-top-row">
+    <button class="add-project-btn" onclick="openProjectForm(null)">+ Добавить проект</button>
+    <div class="proj-counts">
+      <div><span id="startedCount">—</span> начатых</div>
+      <div><span id="finishedCount">—</span> завершённых</div>
+    </div>
+  </div>
   <div class="section-title">Активные проекты</div>
   <div id="manageProjectList">
     <div class="loader"><div class="spinner"></div>Загружаем…</div>
@@ -835,7 +860,7 @@
   // =====================================================
   // НАСТРОЙКА — замени на свой URL
   // =====================================================
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbw4Qg8mec4xEaCtEhgEesoNWt8cV02NVzbtAlvNYk7dovTWYKKtacHJrbFvK0uvIDcq/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxUksho1xYcbfznkVoiGUCBps5zAD6bpmr6zNVJHbqbdoZqtujqKHLXT3BxZTLPtqaX/exec";
 
   // =====================================================
   // Telegram WebApp init
@@ -899,10 +924,18 @@
     return resp.json();
   }
 
+  function updateProjectCounts(data) {
+    const sc = document.getElementById('startedCount');
+    const fc = document.getElementById('finishedCount');
+    if (sc) sc.textContent = data.startedCount || '—';
+    if (fc) fc.textContent = data.finishedCount || '—';
+  }
+
   async function loadProjects() {
     try {
       const data = await apiGet({ action: 'getProjects' });
       projects = data.projects || [];
+      updateProjectCounts(data);
       renderTodayProjects();
     } catch (err) {
       document.getElementById('todayProjectList').innerHTML =
@@ -1426,6 +1459,7 @@
         showToast('🎉 Проект завершён!');
         const freshData = await apiGet({ action: 'getProjects' });
         projects = freshData.projects || [];
+        updateProjectCounts(freshData);
         renderManageProjects();
         renderTodayProjects();
       } else {
@@ -1464,6 +1498,7 @@
         // Перезагружаем список проектов
         const freshData = await apiGet({ action: 'getProjects' });
         projects = freshData.projects || [];
+        updateProjectCounts(freshData);
         renderManageProjects();
         renderTodayProjects();
       } else {
