@@ -1232,7 +1232,7 @@
     el.innerHTML = `
       <div class="week-header">
         <div class="week-date">${data.dateRange || ''}</div>
-        <div class="week-total">${data.totalSum}</div>
+        <div class="week-total">${data.totalSum || 0}</div>
         <div class="week-total-label">крестиков за неделю</div>
       </div>
       ${renderDayChart(dayTotals)}
