@@ -274,26 +274,9 @@
       margin-bottom: 6px;
       box-shadow: var(--shadow);
     }
-    .stat-name { font-weight: 600; font-size: 15px; margin-bottom: 5px; }
-    .stat-bar-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .stat-bar-wrap {
-      flex: 1;
-      height: 8px;
-      background: var(--border);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .stat-bar {
-      height: 100%;
-      border-radius: 4px;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-    }
-    .stat-count { font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; }
-    .stat-norm { font-size: 12px; color: var(--text2); margin-top: 4px; text-align: right; }
+    .stat-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+    .stat-count { font-size: 14px; color: var(--text); }
+    .stat-norm { font-size: 14px; color: var(--text2); margin-top: 2px; }
     .no-data {
       text-align: center;
       color: var(--text2);
@@ -1116,16 +1099,12 @@
         const s = stats[proj];
         const barPct = maxDone > 0 ? Math.round((s.done / maxDone) * 100) : 0;
         const normPct = s.norm > 0 ? Math.min(100, Math.round((s.done / s.norm) * 100)) : null;
+        const leftNorm = s.norm > 0 ? s.norm - s.done : 0;
         return `
           <div class="stat-item">
             <div class="stat-name">${escapeHtml(proj)}</div>
-            <div class="stat-bar-row">
-              <div class="stat-bar-wrap">
-                <div class="stat-bar" style="width:${barPct}%"></div>
-              </div>
-              <div class="stat-count">${s.done} кр.</div>
-            </div>
-            ${s.norm > 0 ? `<div class="stat-norm">Норма: ${s.done}/${s.norm} (${normPct}%)</div>` : ''}
+            <div class="stat-count">Вышито ${s.done} кр.</div>
+            ${s.norm > 0 ? `<div class="stat-norm">До нормы ${leftNorm} (${normPct}%)</div>` : ''}
           </div>`;
       }).join('');
 
