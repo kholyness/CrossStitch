@@ -480,34 +480,23 @@
     .manage-card-info { flex: 1; min-width: 0; }
     .manage-card-name { font-weight: 700; font-size: 14px; color: var(--text); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .manage-card-norm { font-size: 12px; color: var(--text2); }
-    .edit-btn {
-      background: var(--surface2);
-      border: 1.5px solid var(--border);
+    .edit-btn, .finish-btn {
+      background: color-mix(in srgb, var(--accent) 70%, var(--surface));
+      border: none;
       border-radius: 10px;
-      padding: 6px 12px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--accent);
+      padding: 8px;
       cursor: pointer;
-      white-space: nowrap;
+      color: white;
       flex-shrink: 0;
       transition: opacity 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
     }
-    .edit-btn:active { opacity: 0.7; }
+    .edit-btn:active, .finish-btn:active { opacity: 0.7; }
     .manage-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
-    .finish-btn {
-      background: var(--green-light);
-      border: 1.5px solid var(--green);
-      border-radius: 10px;
-      padding: 6px 11px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      color: var(--green);
-      flex-shrink: 0;
-      transition: opacity 0.15s;
-    }
-    .finish-btn:active { opacity: 0.7; }
 
     /* ---- PROJECT FORM MODAL ---- */
     .form-modal {
@@ -1350,8 +1339,12 @@
           <div class="manage-card-norm">${meta}</div>
         </div>
         <div class="manage-card-actions">
-          <button class="finish-btn" onclick="finishProject('${escapeJs(p.name)}')">Завершить</button>
-          <button class="edit-btn" onclick="openProjectForm('${escapeJs(p.name)}')">Изменить</button>
+          <button class="finish-btn" onclick="finishProject('${escapeJs(p.name)}')" title="Завершить">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <button class="edit-btn" onclick="openProjectForm('${escapeJs(p.name)}')" title="Изменить">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
         </div>
       </div>`;
     }).join('');
