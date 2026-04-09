@@ -324,7 +324,8 @@ function doGet(e) {
         currentStreak: statSheet ? statSheet.getRange("K7").getDisplayValue() : '',
         maxStreak: statSheet ? statSheet.getRange("K10").getDisplayValue() : '',
         finishYear: statSheet ? statSheet.getRange("K13").getDisplayValue() : '',
-        daysNoStitch: statSheet ? statSheet.getRange("K4").getDisplayValue() : ''
+        daysNoStitch: statSheet ? statSheet.getRange("K4").getDisplayValue() : '',
+        medianPerDay: statSheet ? statSheet.getRange("I10").getDisplayValue() : ''
       };
     } else {
       const logData = logSheet.getRange("A2:C" + lastRow).getValues();
@@ -345,7 +346,8 @@ function doGet(e) {
       const maxStreak = statSheet ? statSheet.getRange("K10").getDisplayValue() : '';
       const finishYear = statSheet ? statSheet.getRange("K13").getDisplayValue() : '';
       const daysNoStitch = statSheet ? statSheet.getRange("K4").getDisplayValue() : '';
-      result = { months: months, year: year, totalYear: totalYear, currentStreak: currentStreak, maxStreak: maxStreak, finishYear: finishYear, daysNoStitch: daysNoStitch };
+      const medianPerDay = statSheet ? statSheet.getRange("I10").getDisplayValue() : '';
+      result = { months: months, year: year, totalYear: totalYear, currentStreak: currentStreak, maxStreak: maxStreak, finishYear: finishYear, daysNoStitch: daysNoStitch, medianPerDay: medianPerDay };
     }
 
   // --- ADD PROJECT ---
