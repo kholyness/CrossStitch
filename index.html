@@ -1104,6 +1104,10 @@
     const normDone = p.weeklyNorm > 0 && p.leftWeek <= 0;
     const isSelected = selectedProject && selectedProject.name === p.name;
 
+    const normPct = p.weeklyNorm > 0
+      ? Math.min(100, Math.round((p.weeklyNorm - p.leftWeek) / p.weeklyNorm * 100))
+      : 0;
+
     const normText = p.weeklyNorm > 0
       ? (normDone ? '✅ Норма выполнена' : `осталось ${p.leftWeek} кр. из ${p.weeklyNorm}`)
       : '';
@@ -1117,7 +1121,7 @@
           ${hasTodayCount ? `<div class="card-today">+${p.todayCount} сегодня</div>` : ''}
         </div>
         <div class="progress-bar-wrap">
-          <div class="progress-bar" style="width:${pct}%"></div>
+          <div class="progress-bar" style="width:${p.weeklyNorm > 0 ? normPct : pct}%"></div>
         </div>
         <div class="card-meta">
           <span>${pct}% выполнено</span>
