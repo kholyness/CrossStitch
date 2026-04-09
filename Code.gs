@@ -180,10 +180,12 @@ function verifyInitData(initData) {
     TOKEN,
     'WebAppData'
   );
+  // GAS V8 возвращает number[] — конвертируем в Byte[] через base64 round-trip
+  const secretKeyBytes = Utilities.base64Decode(Utilities.base64Encode(secretKey));
   const expected = Utilities.computeHmacSignature(
     Utilities.MacAlgorithm.HMAC_SHA_256,
     checkString,
-    secretKey
+    secretKeyBytes
   );
   const expectedHex = expected.map(function(b) {
     return ('0' + (b & 0xFF).toString(16)).slice(-2);
