@@ -197,7 +197,8 @@ function doGet(e) {
           weeklyNorm: parseFloat(row[14]) || 0,
           leftWeek: parseFloat(row[15]) || 0,
           finishDate: row[5] ? Utilities.formatDate(new Date(row[5]), TZ, "dd.MM.yyyy") : "",
-          todayCount: todayLog[name] || 0
+          todayCount: todayLog[name] || 0,
+          totalRemaining: parseFloat(row[9]) || 0
         };
       });
 
@@ -464,6 +465,59 @@ function doGet(e) {
         logSheet.getRange(rowIndex, 3).setValue(count);
         SpreadsheetApp.flush();
         result = { success: true };
+      }
+    }
+
+  // --- FINISH PROJECT (log remaining stitches → progress becomes 100%) ---
+  } else if (action === 'finishProject') {
+    const name = (e.parameter.name || '').trim();
+    if (!name) {
+      result = { error: 'Название не указано' };
+    } else {
+      const colB = projectSheet.getRange("B2:B50").getValues();
+      let targetRow = -1;
+      for (let i = 0; i < colB.length; i++) {
+        if (colB[i][0] && colB[i][0].toString().trim().toLowerCase() === name.toLowerCase()) {
+          targetRow = i + 2;
+          break;
+        }
+      }
+      if (targetRow === -1) {
+        result = { error: 'Проект не найден' };
+      } else {
+        const projectData = projectSheet.getRange(targetRow, 1, 1, 16).getValues()[0];
+        const totalStitches = parseFloat(projectData[7]) || 0;  // H
+        const remaining = parseFloat(projectData[9]) || 0;       // J
+        if (totalStitches <= 0) {
+          result = { error: 'Укажи общее количество крестиков в настройках проекта' };
+        } else if (remaining <= 0) {
+          result = { error: 'Проект уже на 100%' };
+        } else {
+          // Найти или создать запись за сегодня и добавить остаток
+          const logData = logSheet.getRange("A:C").getDisplayValues();
+          let rowIndex = -1;
+          let existingCount = 0;
+          for (let i = 0; i < logData.length; i++) {
+            if (logData[i][0] === todayStr && logData[i][1].toLowerCase() === name.toLowerCase()) {
+              rowIndex = i + 1;
+              existingCount = parseFloat(logData[i][2]) || 0;
+              break;
+            }
+          }
+          const newCount = existingCount + remaining;
+          if (rowIndex !== -1) {
+            logSheet.getRange(rowIndex, 3).setValue(newCount);
+          } else {
+            logSheet.appendRow([todayStr, name, newCount]);
+          }
+          // Дата финиша → сегодня
+          projectSheet.getRange(targetRow, 6).setValue(today);
+          // Очистить A, N, O, P, Q (1, 14, 15, 16, 17)
+          projectSheet.getRange(targetRow, 1).clearContent();
+          projectSheet.getRange(targetRow, 14, 1, 4).clearContent();
+          SpreadsheetApp.flush();
+          result = { success: true, added: remaining };
+        }
       }
     }
 

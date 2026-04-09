@@ -494,6 +494,20 @@
       transition: opacity 0.15s;
     }
     .edit-btn:active { opacity: 0.7; }
+    .manage-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .finish-btn {
+      background: var(--green-light);
+      border: 1.5px solid var(--green);
+      border-radius: 10px;
+      padding: 6px 11px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--green);
+      flex-shrink: 0;
+      transition: opacity 0.15s;
+    }
+    .finish-btn:active { opacity: 0.7; }
 
     /* ---- PROJECT FORM MODAL ---- */
     .form-modal {
@@ -774,7 +788,7 @@
   // =====================================================
   // НАСТРОЙКА — замени на свой URL
   // =====================================================
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbydpiTbrKw3OmRwVHjZQuvjTpE6NA103nUAiwWbA0S0KTWc5XgakS7NeYnRe8cd8vvT/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzMmxjJZXunD_9vTh2q4mDzEaIT81lzpRLLLNkTgXvqDvYNt8j5nBM7iZ_763ofL4s/exec";
 
   // =====================================================
   // Telegram WebApp init
@@ -1242,7 +1256,10 @@
           <div class="manage-card-name">${escapeHtml(p.name)}</div>
           <div class="manage-card-norm">${meta}</div>
         </div>
-        <button class="edit-btn" onclick="openProjectForm('${escapeJs(p.name)}')">Изменить</button>
+        <div class="manage-card-actions">
+          <button class="finish-btn" onclick="finishProject('${escapeJs(p.name)}')">Завершить</button>
+          <button class="edit-btn" onclick="openProjectForm('${escapeJs(p.name)}')">Изменить</button>
+        </div>
       </div>`;
     }).join('');
   }
@@ -1280,6 +1297,30 @@
 
   function closeProjectForm(e) {
     if (e.target === document.getElementById('projectFormModal')) closeProjectFormModal();
+  }
+
+  async function finishProject(name) {
+    const project = projects.find(p => p.name === name);
+    if (!project) return;
+    if (!project.totalRemaining || project.totalRemaining <= 0) {
+      showToast('Проект уже на 100%!');
+      return;
+    }
+    if (!confirm(`Завершить "${name}"?\n\nОставшиеся ${project.totalRemaining} кр. будут записаны сегодня, прогресс станет 100%.`)) return;
+    try {
+      const data = await apiGet({ action: 'finishProject', name });
+      if (data.success) {
+        showToast('🎉 Проект завершён!');
+        const freshData = await apiGet({ action: 'getProjects' });
+        projects = freshData.projects || [];
+        renderManageProjects();
+        renderTodayProjects();
+      } else {
+        showToast(data.error || 'Ошибка');
+      }
+    } catch (err) {
+      showToast('Ошибка сети 😢');
+    }
   }
 
   async function submitProjectForm() {
