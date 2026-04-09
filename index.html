@@ -861,7 +861,7 @@
   // =====================================================
   // НАСТРОЙКА — замени на свой URL
   // =====================================================
-  const GAS_URL = "https://script.google.com/macros/s/AKfycby4LziY_ANuC0wj7JUYQJso_s_FcTQUCgOGglPjXvuB67eMop8IYKY1rSyq2ZfNPpof/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxJeW0d2P6uxkugKIY9TTMp6JXNmPjR3GvEY2E70jZTF-Bmp52y9A44ygPJXP5CB8S5/exec";
 
   // =====================================================
   // Telegram WebApp init
@@ -972,6 +972,9 @@
     }
     try {
       const data = await apiGet({ action: 'getProjects' });
+      if (data.error) {
+        showToast('Auth: ' + data.error + (data.reason ? ' / ' + data.reason : '') + (data.detail ? ' / ' + data.detail : ''));
+      }
       cacheSet('getProjects', data);
       projects = data.projects || [];
       updateProjectCounts(data);

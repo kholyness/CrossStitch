@@ -156,7 +156,7 @@ function doPost(e) {
 // Проверка подписи Telegram initData
 // =====================================================
 function verifyInitData(initData) {
-  if (!initData) return false;
+  if (!initData) return { ok: false, reason: 'empty' };
 
   const parts = initData.split('&');
   const data = {};
@@ -164,13 +164,16 @@ function verifyInitData(initData) {
 
   for (const part of parts) {
     const eqIdx = part.indexOf('=');
+    if (eqIdx === -1) continue;
     const key = part.slice(0, eqIdx);
     const value = decodeURIComponent(part.slice(eqIdx + 1));
     if (key === 'hash') hash = value;
     else data[key] = value;
   }
 
-  const checkString = Object.keys(data).sort().map(k => k + '=' + data[k]).join('\n');
+  if (!hash) return { ok: false, reason: 'no_hash' };
+
+  const checkString = Object.keys(data).sort().map(function(k) { return k + '=' + data[k]; }).join('\n');
 
   const secretKey = Utilities.computeHmacSignature(
     Utilities.MacAlgorithm.HMAC_SHA256,
@@ -186,7 +189,10 @@ function verifyInitData(initData) {
     return ('0' + (b & 0xFF).toString(16)).slice(-2);
   }).join('');
 
-  return expectedHex === hash;
+  if (expectedHex !== hash) {
+    return { ok: false, reason: 'hash_mismatch', expected: expectedHex.slice(0, 8), received: hash.slice(0, 8) };
+  }
+  return { ok: true };
 }
 
 // =====================================================
@@ -194,9 +200,10 @@ function verifyInitData(initData) {
 // =====================================================
 function doGet(e) {
   try {
-    if (!verifyInitData(e.parameter.initData || '')) {
+    const auth = verifyInitData(e.parameter.initData || '');
+    if (!auth.ok) {
       return ContentService
-        .createTextOutput(JSON.stringify({ error: 'Unauthorized' }))
+        .createTextOutput(JSON.stringify({ error: 'Unauthorized', reason: auth.reason, expected: auth.expected, received: auth.received }))
         .setMimeType(ContentService.MimeType.JSON);
     }
   } catch (authErr) {
