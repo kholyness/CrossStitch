@@ -12,6 +12,10 @@ function doPost(e) {
   try {
     const contents = JSON.parse(e.postData.contents);
     const chatId = contents.message.chat.id;
+
+    // Только владелец может пользоваться ботом
+    if (chatId !== OWNER_ID) return ContentService.createTextOutput('OK');
+
     const text = contents.message.text ? contents.message.text.toString().replace(",", ".") : "";
 
     const ss = SpreadsheetApp.openById(SHEET_ID);
@@ -160,21 +164,48 @@ const OWNER_ID = 266696995;
 function verifyInitData(initData) {
   if (!initData) return { ok: false, reason: 'empty' };
 
-  const parts = initData.split('&');
-  for (var i = 0; i < parts.length; i++) {
-    const eqIdx = parts[i].indexOf('=');
+  // Парсим пары key=value, декодируем значения
+  var pairs = initData.split('&');
+  var hash = '';
+  var checkParts = [];
+  var userStr = null;
+
+  for (var i = 0; i < pairs.length; i++) {
+    var eqIdx = pairs[i].indexOf('=');
     if (eqIdx === -1) continue;
-    if (parts[i].slice(0, eqIdx) === 'user') {
-      try {
-        const user = JSON.parse(decodeURIComponent(parts[i].slice(eqIdx + 1)));
-        if (user.id === OWNER_ID) return { ok: true };
-        return { ok: false, reason: 'wrong_user' };
-      } catch (e) {
-        return { ok: false, reason: 'parse_error' };
-      }
+    var key = pairs[i].slice(0, eqIdx);
+    var value = decodeURIComponent(pairs[i].slice(eqIdx + 1));
+    if (key === 'hash') {
+      hash = value;
+    } else {
+      checkParts.push(key + '=' + value);
+      if (key === 'user') userStr = value;
     }
   }
-  return { ok: false, reason: 'no_user' };
+
+  if (!hash) return { ok: false, reason: 'no_hash' };
+
+  // Строим data-check-string и проверяем HMAC-SHA256 подпись Telegram
+  checkParts.sort();
+  var dataCheckString = checkParts.join('\n');
+
+  var secretKey = Utilities.computeHmacSha256Signature('WebAppData', TOKEN);
+  var signatureBytes = Utilities.computeHmacSha256Signature(dataCheckString, secretKey);
+  var hexSignature = signatureBytes.map(function(b) {
+    return ('0' + (b & 0xFF).toString(16)).slice(-2);
+  }).join('');
+
+  if (hexSignature !== hash) return { ok: false, reason: 'invalid_hash' };
+
+  // Проверяем user ID
+  if (!userStr) return { ok: false, reason: 'no_user' };
+  try {
+    var user = JSON.parse(userStr);
+    if (user.id === OWNER_ID) return { ok: true };
+    return { ok: false, reason: 'wrong_user' };
+  } catch (e) {
+    return { ok: false, reason: 'parse_error' };
+  }
 }
 
 // =====================================================
