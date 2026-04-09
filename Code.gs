@@ -153,48 +153,28 @@ function doPost(e) {
 }
 
 // =====================================================
-// Проверка подписи Telegram initData
+// Проверка доступа: только владелец приложения
 // =====================================================
+const OWNER_ID = 266696995;
+
 function verifyInitData(initData) {
   if (!initData) return { ok: false, reason: 'empty' };
 
   const parts = initData.split('&');
-  const data = {};
-  let hash = '';
-
-  for (const part of parts) {
-    const eqIdx = part.indexOf('=');
+  for (var i = 0; i < parts.length; i++) {
+    const eqIdx = parts[i].indexOf('=');
     if (eqIdx === -1) continue;
-    const key = part.slice(0, eqIdx);
-    const value = decodeURIComponent(part.slice(eqIdx + 1));
-    if (key === 'hash') hash = value;
-    else data[key] = value;
+    if (parts[i].slice(0, eqIdx) === 'user') {
+      try {
+        const user = JSON.parse(decodeURIComponent(parts[i].slice(eqIdx + 1)));
+        if (user.id === OWNER_ID) return { ok: true };
+        return { ok: false, reason: 'wrong_user' };
+      } catch (e) {
+        return { ok: false, reason: 'parse_error' };
+      }
+    }
   }
-
-  if (!hash) return { ok: false, reason: 'no_hash' };
-
-  const checkString = Object.keys(data).sort().map(function(k) { return k + '=' + data[k]; }).join('\n');
-
-  const secretKey = Utilities.computeHmacSignature(
-    Utilities.MacAlgorithm.HMAC_SHA_256,
-    TOKEN,
-    'WebAppData'
-  );
-  // GAS V8 возвращает number[] — конвертируем в Byte[] через base64 round-trip
-  const secretKeyBytes = Utilities.base64Decode(Utilities.base64Encode(secretKey));
-  const expected = Utilities.computeHmacSignature(
-    Utilities.MacAlgorithm.HMAC_SHA_256,
-    checkString,
-    secretKeyBytes
-  );
-  const expectedHex = expected.map(function(b) {
-    return ('0' + (b & 0xFF).toString(16)).slice(-2);
-  }).join('');
-
-  if (expectedHex !== hash) {
-    return { ok: false, reason: 'hash_mismatch', expected: expectedHex.slice(0, 8), received: hash.slice(0, 8) };
-  }
-  return { ok: true };
+  return { ok: false, reason: 'no_user' };
 }
 
 // =====================================================
