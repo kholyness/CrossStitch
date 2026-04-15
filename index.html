@@ -461,6 +461,103 @@
       line-height: 1.3;
     }
 
+    /* ---- MONTHLY HEATMAP ---- */
+    .month-stats-header {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 8px 14px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .month-stats-name { font-size: 12px; color: var(--text2); margin-bottom: 2px; }
+    .month-stats-total { font-size: 22px; font-weight: 800; color: var(--accent); }
+    .month-stats-label { font-size: 12px; color: var(--text2); }
+    .heatmap-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: var(--shadow);
+      margin-bottom: 10px;
+    }
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .heatmap-header {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text2);
+      text-align: center;
+      padding: 2px 0 5px;
+    }
+    .heatmap-header.weekend { color: var(--accent2); }
+    .heatmap-cell {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+    }
+    .heatmap-cell.empty-cell { background: transparent; }
+    .heatmap-cell.level-0 { background: var(--border); }
+    .heatmap-cell.level-1 { background: color-mix(in srgb, var(--accent) 22%, var(--border)); }
+    .heatmap-cell.level-2 { background: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+    .heatmap-cell.level-3 { background: color-mix(in srgb, var(--accent) 88%, var(--border)); }
+    .heatmap-cell.heatmap-today { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .heatmap-day-num {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1;
+    }
+    .heatmap-cell.level-3 .heatmap-day-num { color: white; }
+    .heatmap-day-count {
+      font-size: 8px;
+      color: var(--text2);
+      line-height: 1;
+    }
+    .heatmap-cell.level-3 .heatmap-day-count { color: rgba(255,255,255,0.75); }
+    .heatmap-legend {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      margin-top: 10px;
+    }
+    .heatmap-legend-label { font-size: 10px; color: var(--text2); }
+    .heatmap-legend-cell {
+      width: 13px; height: 13px;
+      border-radius: 3px;
+    }
+    .heatmap-mini-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .heatmap-mini-stat {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 9px 8px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .heatmap-mini-stat-val {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1.1;
+    }
+    .heatmap-mini-stat-label {
+      font-size: 10px;
+      color: var(--text2);
+      margin-top: 3px;
+      line-height: 1.3;
+    }
+
     /* ---- MANAGE PROJECTS PAGE ---- */
     .projects-top-row {
       display: flex;
@@ -866,7 +963,7 @@
   </div>
 </div>
 
-<div class="app-version">v1.1.0</div>
+<div class="app-version">v1.2.0</div>
 
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav">
@@ -901,10 +998,14 @@
 <div class="page" id="page-stats">
   <div class="stats-toggle">
     <button class="stats-toggle-btn active" id="stats-btn-week" onclick="switchStatsTab('week')">Неделя</button>
+    <button class="stats-toggle-btn" id="stats-btn-month" onclick="switchStatsTab('month')">Месяц</button>
     <button class="stats-toggle-btn" id="stats-btn-year" onclick="switchStatsTab('year')">Год</button>
   </div>
   <div class="stats-subtab active" id="weekContent">
     <div class="loader"><div class="spinner"></div>Загружаем статистику…</div>
+  </div>
+  <div class="stats-subtab" id="monthContent">
+    <div class="loader"><div class="spinner"></div>Загружаем…</div>
   </div>
   <div class="stats-subtab" id="yearContent">
     <div class="loader"><div class="spinner"></div>Загружаем…</div>
@@ -997,7 +1098,7 @@
   // =====================================================
   // НАСТРОЙКА — замени на свой URL
   // =====================================================
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbxgBId_jPIljQeL8u5goW9F12-WrAslv1abPox5aAB54qeZs2FeaK7VMqD7ZSZYZEEV/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyv07FgPNgAkbFKcaT-JDi_R_cDxtQN2JzY2U02uJEo4DmVMUxDn0yYIVRP8_4Whp2L/exec";
 
   // =====================================================
   // Telegram WebApp init
@@ -1126,6 +1227,23 @@
     }
   }
 
+  async function loadMonthlyStats() {
+    const el = document.getElementById('monthContent');
+    const cached = cacheGet('getMonthlyStats');
+    if (cached) {
+      renderMonthlyStats(cached);
+    } else {
+      el.innerHTML = '<div class="loader"><div class="spinner"></div>Загружаем…</div>';
+    }
+    try {
+      const data = await apiGet({ action: 'getMonthlyStats' });
+      cacheSet('getMonthlyStats', data);
+      renderMonthlyStats(data);
+    } catch (err) {
+      if (!cached) el.innerHTML = '<div class="no-data"><span class="no-data-emoji">⚠️</span>Ошибка загрузки.</div>';
+    }
+  }
+
   async function loadYearlyStats() {
     const el = document.getElementById('yearContent');
     const cached = cacheGet('getYearlyStats');
@@ -1238,6 +1356,89 @@
         </div>
         <div class="card-meta">
           ${normText ? `<span class="card-norm${normDone ? ' done' : ''}">${normText}</span>` : ''}
+        </div>
+      </div>`;
+  }
+
+  function renderMonthlyStats(data) {
+    const el = document.getElementById('monthContent');
+    const { month, year, daysInMonth, firstWeekday, days, totalMonth } = data;
+
+    const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+    const dayHeaders = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+    const todayDate = new Date();
+    const todayDay = (todayDate.getMonth() + 1 === month && todayDate.getFullYear() === year) ? todayDate.getDate() : -1;
+
+    const maxCount = Math.max(...days.map(d => d.count), 1);
+    function getLevel(count) {
+      if (count === 0) return 'level-0';
+      const r = count / maxCount;
+      if (r < 0.25) return 'level-1';
+      if (r < 0.6)  return 'level-2';
+      return 'level-3';
+    }
+    function fmtCount(v) {
+      return v >= 1000 ? (v / 1000).toFixed(1).replace('.0','') + 'к' : v.toString();
+    }
+
+    // Header row
+    let gridHTML = dayHeaders.map((d, i) =>
+      `<div class="heatmap-header${i >= 5 ? ' weekend' : ''}">${d}</div>`
+    ).join('');
+
+    // Empty cells before first day
+    for (let i = 0; i < firstWeekday; i++) {
+      gridHTML += '<div class="heatmap-cell empty-cell"></div>';
+    }
+
+    // Day cells
+    days.forEach(d => {
+      const level = getLevel(d.count);
+      const isToday = d.day === todayDay;
+      gridHTML += `<div class="heatmap-cell ${level}${isToday ? ' heatmap-today' : ''}">` +
+        `<span class="heatmap-day-num">${d.day}</span>` +
+        (d.count > 0 ? `<span class="heatmap-day-count">${fmtCount(d.count)}</span>` : '') +
+        `</div>`;
+    });
+
+    // Mini stats
+    const activeDays = days.filter(d => d.count > 0).length;
+    const bestDay = days.reduce((best, d) => d.count > best.count ? d : best, { day: 0, count: 0 });
+    const avgPerActiveDay = activeDays > 0 ? Math.round(totalMonth / activeDays) : 0;
+
+    el.innerHTML = `
+      <div class="month-stats-header">
+        <div class="month-stats-name">${monthNames[month - 1]} ${year}</div>
+        <div class="month-stats-total">${totalMonth.toLocaleString('ru')}</div>
+        <div class="month-stats-label">крестиков за месяц</div>
+      </div>
+      <div class="heatmap-card">
+        <div class="heatmap-grid">${gridHTML}</div>
+        <div class="heatmap-legend">
+          <span class="heatmap-legend-label">меньше</span>
+          <div class="heatmap-legend-cell" style="background:color-mix(in srgb,var(--accent) 22%,var(--border))"></div>
+          <div class="heatmap-legend-cell" style="background:color-mix(in srgb,var(--accent) 55%,var(--border))"></div>
+          <div class="heatmap-legend-cell" style="background:color-mix(in srgb,var(--accent) 88%,var(--border))"></div>
+          <span class="heatmap-legend-label">больше</span>
+        </div>
+      </div>
+      <div class="heatmap-mini-stats">
+        <div class="heatmap-mini-stat">
+          <div class="heatmap-mini-stat-val">${activeDays}</div>
+          <div class="heatmap-mini-stat-label">дней с вышивкой</div>
+        </div>
+        <div class="heatmap-mini-stat">
+          <div class="heatmap-mini-stat-val">${avgPerActiveDay || '—'}</div>
+          <div class="heatmap-mini-stat-label">среднее в активный день</div>
+        </div>
+        <div class="heatmap-mini-stat">
+          <div class="heatmap-mini-stat-val">${bestDay.count > 0 ? fmtCount(bestDay.count) : '—'}</div>
+          <div class="heatmap-mini-stat-label">лучший день${bestDay.count > 0 ? ' (' + bestDay.day + ')' : ''}</div>
+        </div>
+        <div class="heatmap-mini-stat">
+          <div class="heatmap-mini-stat-val">${daysInMonth - activeDays}</div>
+          <div class="heatmap-mini-stat-label">дней без вышивки</div>
         </div>
       </div>`;
   }
@@ -1449,7 +1650,7 @@
       });
 
       if (data.success) {
-        cacheInvalidate('getWeeklyStats', 'getYearlyStats');
+        cacheInvalidate('getWeeklyStats', 'getYearlyStats', 'getMonthlyStats');
         // Update local state immediately for instant UI feedback
         selectedProject.todayCount = count;
         selectedProject.leftWeek = data.leftWeek;
@@ -1535,6 +1736,7 @@
 
     if (name === 'stats') {
       if (activeStatsTab === 'week') loadWeeklyStats();
+      else if (activeStatsTab === 'month') loadMonthlyStats();
       else loadYearlyStats();
     }
     if (name === 'projects') loadProjects();
@@ -1544,10 +1746,13 @@
   function switchStatsTab(tab) {
     activeStatsTab = tab;
     document.getElementById('weekContent').classList.toggle('active', tab === 'week');
+    document.getElementById('monthContent').classList.toggle('active', tab === 'month');
     document.getElementById('yearContent').classList.toggle('active', tab === 'year');
     document.getElementById('stats-btn-week').classList.toggle('active', tab === 'week');
+    document.getElementById('stats-btn-month').classList.toggle('active', tab === 'month');
     document.getElementById('stats-btn-year').classList.toggle('active', tab === 'year');
     if (tab === 'week') loadWeeklyStats();
+    else if (tab === 'month') loadMonthlyStats();
     else loadYearlyStats();
   }
 
@@ -1694,7 +1899,7 @@
         showToast('🎉 Проект завершён!');
         const freshData = await apiGet({ action: 'getProjects' });
         cacheSet('getProjects', freshData);
-        cacheInvalidate('getWeeklyStats', 'getYearlyStats');
+        cacheInvalidate('getWeeklyStats', 'getYearlyStats', 'getMonthlyStats');
         projects = freshData.projects || [];
         updateProjectCounts(freshData);
         renderManageProjects();
