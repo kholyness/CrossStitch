@@ -1337,13 +1337,13 @@
   }
 
   function stitchInputHTML(p) {
-    const val = p.todayCount || 0;
+    const val = p.todayCount || '';
     return `
       <div class="stitch-input-card visible" id="stitchInputCard">
         <div class="input-label">Сколько крестиков сегодня?</div>
         <div class="counter-row">
           <button class="counter-btn btn-minus" onclick="changeCount(-1)">−</button>
-          <input type="number" class="counter-input" id="countInput" value="${val}" min="0" step="0.5" inputmode="decimal" />
+          <input type="number" class="counter-input" id="countInput" value="${val}" min="0" step="0.5" inputmode="decimal" placeholder="0" />
           <button class="counter-btn btn-plus" onclick="changeCount(1)">+</button>
         </div>
         <button class="save-btn" id="saveBtn" onclick="saveStitches()">Сохранить</button>
@@ -1621,7 +1621,7 @@
 
     renderTodayProjects();
 
-    // Скроллим карточку к верху (под хедером)
+    // Скроллим карточку к верху (под хедером) и фокусируем поле ввода
     setTimeout(() => {
       const idx = projects.findIndex(p => p.name === name);
       const card = document.getElementById(`proj-card-${idx}`);
@@ -1630,6 +1630,8 @@
         const y = card.getBoundingClientRect().top + window.scrollY - headerHeight;
         window.scrollTo({ top: y, behavior: 'smooth' });
       }
+      const input = document.getElementById('countInput');
+      if (input) input.focus();
     }, 50);
   }
 
