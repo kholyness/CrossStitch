@@ -255,6 +255,35 @@
     }
     .card-norm.done { color: var(--green); }
 
+    /* ---- STATS TOGGLE ---- */
+    .stats-toggle {
+      display: flex;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 4px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+      gap: 4px;
+    }
+    .stats-toggle-btn {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text2);
+      transition: background 0.2s, color 0.2s;
+    }
+    .stats-toggle-btn.active {
+      background: color-mix(in srgb, var(--accent) 70%, var(--surface));
+      color: white;
+    }
+    .stats-subtab { display: none; }
+    .stats-subtab.active { display: block; }
+
     /* ---- WEEKLY STATS ---- */
     .week-header {
       background: var(--surface);
@@ -647,11 +676,11 @@
       align-items: center;
       justify-content: space-between;
       background: var(--surface);
-      border-radius: 12px;
-      padding: 10px 14px;
-      margin-bottom: 6px;
+      border-radius: 8px;
+      padding: 5px 10px;
+      margin-bottom: 4px;
       box-shadow: var(--shadow);
-      border-left: 4px solid transparent;
+      border-left: 3px solid transparent;
     }
     .thread-item.thread-low {
       border-left-color: #c9963a;
@@ -662,15 +691,15 @@
       background: color-mix(in srgb, var(--accent-light) 60%, var(--surface));
     }
     .thread-num {
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 700;
       color: var(--text);
     }
     .thread-qty {
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 600;
-      padding: 3px 10px;
-      border-radius: 8px;
+      padding: 2px 7px;
+      border-radius: 6px;
     }
     .thread-item.thread-low .thread-qty {
       background: var(--gold-light);
@@ -845,13 +874,9 @@
     <span class="nav-icon">🪡</span>
     Вышиваем
   </div>
-  <div class="nav-item" id="nav-week" onclick="switchPage('week')">
+  <div class="nav-item" id="nav-stats" onclick="switchPage('stats')">
     <span class="nav-icon">📊</span>
-    Неделя
-  </div>
-  <div class="nav-item" id="nav-year" onclick="switchPage('year')">
-    <span class="nav-icon">📅</span>
-    Год
+    Статистика
   </div>
   <div class="nav-item" id="nav-projects" onclick="switchPage('projects')">
     <span class="nav-icon">🗂️</span>
@@ -872,16 +897,16 @@
   </div>
 </div>
 
-<!-- PAGE: WEEK -->
-<div class="page" id="page-week">
-  <div id="weekContent">
+<!-- PAGE: STATS -->
+<div class="page" id="page-stats">
+  <div class="stats-toggle">
+    <button class="stats-toggle-btn active" id="stats-btn-week" onclick="switchStatsTab('week')">Неделя</button>
+    <button class="stats-toggle-btn" id="stats-btn-year" onclick="switchStatsTab('year')">Год</button>
+  </div>
+  <div class="stats-subtab active" id="weekContent">
     <div class="loader"><div class="spinner"></div>Загружаем статистику…</div>
   </div>
-</div>
-
-<!-- PAGE: YEAR -->
-<div class="page" id="page-year">
-  <div id="yearContent">
+  <div class="stats-subtab" id="yearContent">
     <div class="loader"><div class="spinner"></div>Загружаем…</div>
   </div>
 </div>
@@ -1000,6 +1025,7 @@
   let selectedProject = null;
   let fortuneSelected = null;
   let savedScrollY = 0;
+  let activeStatsTab = 'week';
 
   // =====================================================
   // Init
@@ -1507,10 +1533,22 @@
     document.getElementById('page-' + name).classList.add('active');
     document.getElementById('nav-' + name).classList.add('active');
 
-    if (name === 'week') loadWeeklyStats();
-    if (name === 'year') loadYearlyStats();
+    if (name === 'stats') {
+      if (activeStatsTab === 'week') loadWeeklyStats();
+      else loadYearlyStats();
+    }
     if (name === 'projects') loadProjects();
     if (name === 'threads') loadThreads();
+  }
+
+  function switchStatsTab(tab) {
+    activeStatsTab = tab;
+    document.getElementById('weekContent').classList.toggle('active', tab === 'week');
+    document.getElementById('yearContent').classList.toggle('active', tab === 'year');
+    document.getElementById('stats-btn-week').classList.toggle('active', tab === 'week');
+    document.getElementById('stats-btn-year').classList.toggle('active', tab === 'year');
+    if (tab === 'week') loadWeeklyStats();
+    else loadYearlyStats();
   }
 
   // =====================================================
