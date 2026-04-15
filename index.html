@@ -602,6 +602,19 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* ---- VERSION LABEL ---- */
+    .app-version {
+      position: fixed;
+      bottom: calc(var(--nav-height) + 6px);
+      right: 10px;
+      font-size: 10px;
+      color: var(--text2);
+      opacity: 0.45;
+      z-index: 99;
+      pointer-events: none;
+      letter-spacing: 0.02em;
+    }
+
     /* ---- BOTTOM NAV ---- */
     .bottom-nav {
       position: fixed;
@@ -619,14 +632,75 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      font-size: 11px;
+      font-size: 10px;
       color: var(--text2);
       font-weight: 500;
-      gap: 3px;
+      gap: 2px;
       transition: color 0.2s;
     }
     .nav-item.active { color: var(--accent); }
-    .nav-icon { font-size: 22px; }
+    .nav-icon { font-size: 20px; }
+
+    /* ---- МУЛИНЕ TAB ---- */
+    .thread-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 6px;
+      box-shadow: var(--shadow);
+      border-left: 4px solid transparent;
+    }
+    .thread-item.thread-low {
+      border-left-color: #c9963a;
+      background: color-mix(in srgb, var(--gold-light) 60%, var(--surface));
+    }
+    .thread-item.thread-empty {
+      border-left-color: #c0624a;
+      background: color-mix(in srgb, var(--accent-light) 60%, var(--surface));
+    }
+    .thread-num {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .thread-qty {
+      font-size: 14px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 8px;
+    }
+    .thread-item.thread-low .thread-qty {
+      background: var(--gold-light);
+      color: var(--gold);
+    }
+    .thread-item.thread-empty .thread-qty {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+    .threads-summary {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow);
+      display: flex;
+      gap: 16px;
+    }
+    .threads-summary-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .threads-summary-count {
+      font-size: 22px;
+      font-weight: 800;
+    }
+    .threads-summary-count.empty { color: var(--accent); }
+    .threads-summary-count.low { color: var(--gold); }
+    .threads-summary-label { font-size: 11px; color: var(--text2); margin-top: 1px; }
 
     /* ---- FORTUNE MODAL ---- */
     .modal-overlay {
@@ -763,6 +837,8 @@
   </div>
 </div>
 
+<div class="app-version">v1.0.0</div>
+
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav">
   <div class="nav-item active" id="nav-today" onclick="switchPage('today')">
@@ -780,6 +856,10 @@
   <div class="nav-item" id="nav-projects" onclick="switchPage('projects')">
     <span class="nav-icon">🗂️</span>
     Проекты
+  </div>
+  <div class="nav-item" id="nav-threads" onclick="switchPage('threads')">
+    <span class="nav-icon">🧶</span>
+    Мулине
   </div>
 </nav>
 
@@ -817,6 +897,13 @@
   </div>
   <div class="section-title">Активные проекты</div>
   <div id="manageProjectList">
+    <div class="loader"><div class="spinner"></div>Загружаем…</div>
+  </div>
+</div>
+
+<!-- PAGE: THREADS -->
+<div class="page" id="page-threads">
+  <div id="threadsContent">
     <div class="loader"><div class="spinner"></div>Загружаем…</div>
   </div>
 </div>
@@ -885,7 +972,7 @@
   // =====================================================
   // НАСТРОЙКА — замени на свой URL
   // =====================================================
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbz11sZ9NsoiUuleyv5XPirZxiAzcM5PN9yvtGwR8eAaLF8xruf4kkJ_HUY30ZHH3QNG/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxgBId_jPIljQeL8u5goW9F12-WrAslv1abPox5aAB54qeZs2FeaK7VMqD7ZSZYZEEV/exec";
 
   // =====================================================
   // Telegram WebApp init
@@ -1423,6 +1510,7 @@
     if (name === 'week') loadWeeklyStats();
     if (name === 'year') loadYearlyStats();
     if (name === 'projects') loadProjects();
+    if (name === 'threads') loadThreads();
   }
 
   // =====================================================
@@ -1622,6 +1710,49 @@
       btn.disabled = false;
       btn.textContent = 'Сохранить';
     }
+  }
+
+  // =====================================================
+  // Мулине (DMC threads)
+  // =====================================================
+  let threadsLoaded = false;
+
+  async function loadThreads() {
+    if (threadsLoaded) return;
+    const container = document.getElementById('threadsContent');
+    container.innerHTML = '<div class="loader"><div class="spinner"></div>Загружаем…</div>';
+    try {
+      const data = await apiGet({ action: 'getDMCThreads' });
+      threadsLoaded = true;
+      renderThreads(data.threads || []);
+    } catch (err) {
+      container.innerHTML = '<div class="no-data"><span class="no-data-emoji">😢</span>Ошибка загрузки</div>';
+    }
+  }
+
+  function renderThreads(threads) {
+    const container = document.getElementById('threadsContent');
+    if (threads.length === 0) {
+      container.innerHTML = '<div class="no-data"><span class="no-data-emoji">🧶</span>Всё в наличии — нехватки нет!</div>';
+      return;
+    }
+    const emptyCount = threads.filter(t => t.qty === 0).length;
+    const lowCount = threads.filter(t => t.qty > 0 && t.qty < 3).length;
+    let html = '<div class="threads-summary">';
+    if (emptyCount > 0) {
+      html += `<div class="threads-summary-item"><span class="threads-summary-count empty">${emptyCount}</span><span class="threads-summary-label">закончились</span></div>`;
+    }
+    if (lowCount > 0) {
+      html += `<div class="threads-summary-item"><span class="threads-summary-count low">${lowCount}</span><span class="threads-summary-label">мало (1–2)</span></div>`;
+    }
+    html += '</div>';
+    html += '<div class="section-title">Нужно пополнить</div>';
+    for (const t of threads) {
+      const cls = t.qty === 0 ? 'thread-empty' : 'thread-low';
+      const qtyLabel = t.qty === 0 ? 'нет' : t.qty;
+      html += `<div class="thread-item ${cls}"><span class="thread-num">DMC ${escapeHtml(t.num)}</span><span class="thread-qty">${qtyLabel}</span></div>`;
+    }
+    container.innerHTML = html;
   }
 
   // =====================================================
