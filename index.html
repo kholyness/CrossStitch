@@ -1130,13 +1130,27 @@
     tg.expand();
     // Применяем цвета Telegram если они есть
     const tp = tg.themeParams;
+    const isDark = tg.colorScheme === 'dark';
+    const r = document.documentElement.style;
+    if (isDark) {
+      r.setProperty('--bg', '#1a1210');
+      r.setProperty('--surface', '#261a16');
+      r.setProperty('--surface2', '#2f201a');
+      r.setProperty('--border', '#3d2820');
+      r.setProperty('--text', '#f5ede8');
+      r.setProperty('--text2', '#b89080');
+      r.setProperty('--accent', '#b86050');
+      r.setProperty('--accent2', '#c87868');
+      r.setProperty('--accent-light', '#3d1f18');
+    }
     if (tp) {
-      if (tp.bg_color) document.documentElement.style.setProperty('--bg', tp.bg_color);
-      if (tp.secondary_bg_color) document.documentElement.style.setProperty('--surface', tp.secondary_bg_color);
-      if (tp.text_color) document.documentElement.style.setProperty('--text', tp.text_color);
-      if (tp.hint_color) document.documentElement.style.setProperty('--text2', tp.hint_color);
-      if (tp.button_color) document.documentElement.style.setProperty('--accent', tp.button_color);
-      if (tp.button_text_color) document.documentElement.style.setProperty('--accent-text', tp.button_text_color);
+      if (tp.bg_color) r.setProperty('--bg', tp.bg_color);
+      if (tp.secondary_bg_color) r.setProperty('--surface', tp.secondary_bg_color);
+      if (tp.text_color) r.setProperty('--text', tp.text_color);
+      if (tp.hint_color) r.setProperty('--text2', tp.hint_color);
+      if (tp.button_color) r.setProperty('--accent', tp.button_color);
+      if (tp.button_text_color) r.setProperty('--accent-text', tp.button_text_color);
+      if (tp.section_separator_color) r.setProperty('--border', tp.section_separator_color);
     }
   }
 
