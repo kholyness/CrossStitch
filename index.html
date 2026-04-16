@@ -975,7 +975,7 @@
   </div>
 </div>
 
-<div class="app-version">v1.2.1</div>
+<div class="app-version">v1.2.2</div>
 
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav">
@@ -1154,7 +1154,7 @@
   // =====================================================
   function init() {
     setHeaderDate();
-    loadProjects();
+    loadProjects(true);
     loadDaysNoStitch();
   }
 
@@ -1763,7 +1763,7 @@
       else if (activeStatsTab === 'month') loadMonthlyStats();
       else loadYearlyStats();
     }
-    if (name === 'projects') loadProjects();
+    if (name === 'projects') loadProjects(true);
     if (name === 'threads') loadThreads();
   }
 
