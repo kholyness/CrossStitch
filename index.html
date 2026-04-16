@@ -296,6 +296,10 @@
     .week-date { font-size: 12px; color: var(--text2); margin-bottom: 2px; }
     .week-total { font-size: 22px; font-weight: 800; color: var(--accent); }
     .week-total-label { font-size: 12px; color: var(--text2); }
+    .period-nav-row { display: flex; align-items: center; justify-content: space-between; }
+    .period-nav-btn { background: none; border: none; color: var(--text1); font-size: 22px; padding: 0 6px; cursor: pointer; opacity: 0.6; line-height: 1; flex-shrink: 0; }
+    .period-nav-btn:active { opacity: 1; }
+    .period-nav-btn.hidden { visibility: hidden; pointer-events: none; }
     .stat-item {
       background: var(--surface);
       border-radius: var(--radius);
@@ -476,14 +480,14 @@
     .heatmap-card {
       background: var(--surface);
       border-radius: var(--radius);
-      padding: 10px;
+      padding: 7px;
       box-shadow: var(--shadow);
       margin-bottom: 10px;
     }
     .heatmap-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 3px;
+      gap: 2px;
     }
     .heatmap-header {
       font-size: 11px;
@@ -525,13 +529,13 @@
     .heatmap-popup {
       background: var(--surface);
       border-radius: var(--radius);
-      padding: 20px 28px;
+      padding: 14px 20px;
       text-align: center;
       box-shadow: 0 4px 24px rgba(0,0,0,0.25);
       min-width: 170px;
     }
     .heatmap-popup-date { font-size: 13px; color: var(--text2); margin-bottom: 8px; }
-    .heatmap-popup-count { font-size: 30px; font-weight: 800; color: var(--accent); line-height: 1; }
+    .heatmap-popup-count { font-size: 24px; font-weight: 800; color: var(--accent); line-height: 1; }
     .heatmap-popup-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
     .heatmap-legend {
       display: flex;
@@ -1119,7 +1123,7 @@
   // =====================================================
   // НАСТРОЙКА — замени на свой URL
   // =====================================================
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbyv07FgPNgAkbFKcaT-JDi_R_cDxtQN2JzY2U02uJEo4DmVMUxDn0yYIVRP8_4Whp2L/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxftd-ekDvplk3TuAs9jdeekwhUycmf6DG78KjfWiuKXgithC7BZXfCUrMuSqUVdxyU/exec";
 
   // =====================================================
   // Telegram WebApp init
@@ -1162,6 +1166,8 @@
   let fortuneSelected = null;
   let savedScrollY = 0;
   let activeStatsTab = 'week';
+  let weekOffset = 0;
+  let monthOffset = 0;
 
   // =====================================================
   // Init
@@ -1264,15 +1270,18 @@
 
   async function loadMonthlyStats() {
     const el = document.getElementById('monthContent');
-    const cached = cacheGet('getMonthlyStats');
+    const cacheKey = 'getMonthlyStats' + (monthOffset !== 0 ? '_' + monthOffset : '');
+    const cached = cacheGet(cacheKey);
     if (cached) {
       renderMonthlyStats(cached);
     } else {
       el.innerHTML = '<div class="loader"><div class="spinner"></div>Загружаем…</div>';
     }
     try {
-      const data = await apiGet({ action: 'getMonthlyStats' });
-      cacheSet('getMonthlyStats', data);
+      const params = { action: 'getMonthlyStats' };
+      if (monthOffset !== 0) params.monthOffset = monthOffset;
+      const data = await apiGet(params);
+      cacheSet(cacheKey, data);
       renderMonthlyStats(data);
     } catch (err) {
       if (!cached) el.innerHTML = '<div class="no-data"><span class="no-data-emoji">⚠️</span>Ошибка загрузки.</div>';
@@ -1298,15 +1307,18 @@
 
   async function loadWeeklyStats() {
     const el = document.getElementById('weekContent');
-    const cached = cacheGet('getWeeklyStats');
+    const cacheKey = 'getWeeklyStats' + (weekOffset !== 0 ? '_' + weekOffset : '');
+    const cached = cacheGet(cacheKey);
     if (cached) {
       renderWeeklyStats(cached);
     } else {
       el.innerHTML = '<div class="loader"><div class="spinner"></div>Загружаем…</div>';
     }
     try {
-      const data = await apiGet({ action: 'getWeeklyStats' });
-      cacheSet('getWeeklyStats', data);
+      const params = { action: 'getWeeklyStats' };
+      if (weekOffset !== 0) params.weekOffset = weekOffset;
+      const data = await apiGet(params);
+      cacheSet(cacheKey, data);
       renderWeeklyStats(data);
     } catch (err) {
       if (!cached) el.innerHTML = '<div class="no-data"><span class="no-data-emoji">⚠️</span>Ошибка загрузки.</div>';
@@ -1400,6 +1412,7 @@
     const { month, year, daysInMonth, firstWeekday, days, totalMonth } = data;
 
     const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+    const monthNamesGen = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
     const dayHeaders = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 
     const todayDate = new Date();
@@ -1445,7 +1458,11 @@
 
     el.innerHTML = `
       <div class="month-stats-header">
-        <div class="month-stats-name">${monthNames[month - 1]} ${year}</div>
+        <div class="period-nav-row">
+          <button class="period-nav-btn" onclick="navigateMonth(-1)">‹</button>
+          <div class="month-stats-name">${monthNames[month - 1]} ${year}</div>
+          <button class="period-nav-btn${monthOffset === 0 ? ' hidden' : ''}" onclick="navigateMonth(1)">›</button>
+        </div>
         <div class="month-stats-total">${totalMonth.toLocaleString('ru')}</div>
         <div class="month-stats-label">крестиков за месяц</div>
       </div>
@@ -1470,7 +1487,7 @@
         </div>
         <div class="heatmap-mini-stat">
           <div class="heatmap-mini-stat-val">${bestDay.count > 0 ? fmtCount(bestDay.count) : '—'}</div>
-          <div class="heatmap-mini-stat-label">лучший день${bestDay.count > 0 ? ' (' + bestDay.day + ')' : ''}</div>
+          <div class="heatmap-mini-stat-label">лучший день${bestDay.count > 0 ? ' (' + bestDay.day + ' ' + monthNamesGen[month - 1] + ')' : ''}</div>
         </div>
         <div class="heatmap-mini-stat">
           <div class="heatmap-mini-stat-val">${daysNoStitch}</div>
@@ -1570,15 +1587,23 @@
     const keys = Object.keys(stats);
     const dayTotals = data.dayTotals || new Array(7).fill(0);
 
-    if (!keys.length) {
-      el.innerHTML = `
-        <div class="week-header">
+    const navBtn = `<button class="period-nav-btn" onclick="navigateWeek(-1)">‹</button>`;
+    const navBtnNext = `<button class="period-nav-btn${weekOffset === 0 ? ' hidden' : ''}" onclick="navigateWeek(1)">›</button>`;
+    const weekHeaderHTML = `
+      <div class="week-header">
+        <div class="period-nav-row">
+          ${navBtn}
           <div class="week-date">${data.dateRange || ''}</div>
-          <div class="week-total">0</div>
-          <div class="week-total-label">крестиков за неделю</div>
-        </div>
-        ${renderDayChart(dayTotals)}
-        <div class="no-data"><span class="no-data-emoji">🪡</span>Записей за эту неделю пока нет.</div>`;
+          ${navBtnNext}
+        </div>`;
+
+    if (!keys.length) {
+      el.innerHTML = weekHeaderHTML + `
+        <div class="week-total">0</div>
+        <div class="week-total-label">крестиков за неделю</div>
+      </div>
+      ${renderDayChart(dayTotals)}
+      <div class="no-data"><span class="no-data-emoji">🪡</span>Записей за эту неделю пока нет.</div>`;
       return;
     }
 
@@ -1606,9 +1631,7 @@
           </div>`;
       }).join('');
 
-    el.innerHTML = `
-      <div class="week-header">
-        <div class="week-date">${data.dateRange || ''}</div>
+    el.innerHTML = weekHeaderHTML + `
         <div class="week-total">${data.totalSum || 0}</div>
         <div class="week-total-label">крестиков за неделю</div>
       </div>
@@ -1792,6 +1815,20 @@
     if (tab === 'week') loadWeeklyStats();
     else if (tab === 'month') loadMonthlyStats();
     else loadYearlyStats();
+  }
+
+  function navigateWeek(delta) {
+    const newOffset = weekOffset + delta;
+    if (newOffset > 0) return;
+    weekOffset = newOffset;
+    loadWeeklyStats();
+  }
+
+  function navigateMonth(delta) {
+    const newOffset = monthOffset + delta;
+    if (newOffset > 0) return;
+    monthOffset = newOffset;
+    loadMonthlyStats();
   }
 
   // =====================================================
