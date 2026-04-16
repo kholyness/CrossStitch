@@ -975,7 +975,7 @@
   </div>
 </div>
 
-<div class="app-version">v1.2.0</div>
+<div class="app-version">v1.2.1</div>
 
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav">
@@ -1989,6 +1989,17 @@
         updateProjectCounts(freshData);
         renderManageProjects();
         renderTodayProjects();
+      } else if (data.error === 'Проект не найден' && editingProject) {
+        // Кэш устарел (название изменили напрямую в таблице) — обновляем данные
+        showToast('Данные устарели, обновляем список…');
+        const freshData = await apiGet({ action: 'getProjects' });
+        cacheSet('getProjects', freshData);
+        projects = freshData.projects || [];
+        updateProjectCounts(freshData);
+        renderManageProjects();
+        renderTodayProjects();
+        closeProjectFormModal();
+        showToast('Список обновлён. Откройте проект и сохраните снова.');
       } else {
         showToast(data.error || 'Ошибка сохранения');
       }
